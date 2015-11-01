@@ -1,14 +1,21 @@
 # Distributed Config (discfg)
 
+**NOTE** This is very early on and experimental. I would not use this for anything in production!
+I'm just trying to get a proof of concept and organize my thoughts. I will start versioning this
+and will note when I think it's something safe to play with. I will note when it is suitable
+for production. PLEASE leave any feedback or issues in issues. Just keep in mind I probably
+know of the obvious issues =) That doesn't mean they shoudln't be in there though. So flag away.
+
+------
+
 A distributed configuration service built on top of Amazon Web Services. Specifically, it uses 
 Lambda, DyanmoDB, and API Gateway to access it all. Though it can also be used via command line.
 
 It's heavily inspired by [etcd](https://github.com/coreos/etcd). However, there are some very
 important differences and the target use case is a bit different.
 
-The goal of discfg is to provide a configuration and service discovery solution for applications
-under a micro/service based architecture. The focus is not on a storage solution, but rather 
-on solutions for configuration and convention.
+The goal of discfg is to provide a configuration and service discovery solution for applications. 
+The focus is not on a storage solution, but rather on solutions for configuration and convention.
 
 When building applications or services, configuration and state become a challenge. Especially 
 in a distributed environment or when working with others.
@@ -71,6 +78,9 @@ Related to listening for changes, another difference is that discfg does not sto
 This is useful in etcd because if the long polling got interrupted, it could continue where it left off.
 Keeping a history of changes is not, currently, a goal of discfg nor is long polling for key changes.
 
+There are many differences by design. Both good and bad depending on the use case. If the "good" differences
+seem to make sense to you, then discfg might be the tool for you.
+
 ## "Good" Differences
 
 Well, it's not that the above differences are bad...But those are, more or less, the major things lacking
@@ -79,9 +89,9 @@ eventual consistency and not having a distributed lock. So let's look at what yo
 
 I think the biggest benefits you gain is cost and ease of use. Without a doubt.
 
-To run etcd you need multiple servers to form a quorum and those servers run 24/7. This comes with a cost.
-The thing about discfg is that it runs using AWS Lambda, API Gateway, and DynamoDB. All services that carry 
-a low cost pay as you go model. This makes discfg far cheaper to run.
+To run etcd you need (ok, you don't need, but should have) multiple servers to form a quorum and those servers 
+run 24/7. This comes with a cost. The thing about discfg is that it runs using AWS Lambda, API Gateway, and 
+DynamoDB. All services that carry a low cost pay as you go model. This makes discfg far cheaper to run.
 
 Both are easy to use with a RESTful interface, but AWS adds some extra features for free. It makes security
 fairly easy and straight forward. API Gateway adds rate limiting as well -- yea, maybe there's not much 
@@ -93,3 +103,7 @@ server side daemon that might crash.
 
 Due to how Lambda works, there's no concern for firewalls or other security risks you'd find with 
 a traditional servers.
+
+When we're talking about DynamoDB...An AWS service...We're talking about AWS IAM to access it. This is 
+a wonderful security feature. It removes many concerns from the tool itself. It also makes it easy to manage
+for the user because there are so many ways you can work with AWS IAM.

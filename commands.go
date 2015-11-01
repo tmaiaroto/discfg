@@ -6,6 +6,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
+	// "log"
+	"strconv"
 )
 
 // Just like etcd, the response object is built in a very similar manner.
@@ -55,6 +57,7 @@ type PrevNode struct {
 }
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
+const DiscfgFileName = ".discfg"
 
 func out(resp ReponseObject) {
 	switch Config.OutputFormat {
@@ -94,7 +97,7 @@ func createCfg(cmd *cobra.Command, args []string) {
 			resp.Message = err.Error()
 		}
 		if success {
-			resp.Success = "Successfully created the configuration."
+			resp.Success = "Successfully created the configuration"
 			// TODO: a verbose, vv, or debug mode which would include the response from AWS
 			// So if verbose, then Message would take on this response...Or perhaps another field.
 			//log.Println(response)
@@ -133,14 +136,23 @@ func which(cmd *cobra.Command, args []string) {
 	resp := ReponseObject{
 		Action: "which",
 	}
-	currentCfg, err := ioutil.ReadFile(".discfg")
-	if err != nil {
+	currentCfg := getDiscfgNameFromFile()
+	if currentCfg != "" {
 		resp.Message = "No current working configuration has been set at this path."
 	} else {
-		resp.Message = "Current working configuration: " + string(currentCfg)
-		resp.CurrentDiscfg = string(currentCfg)
+		resp.Message = "Current working configuration: " + currentCfg
+		resp.CurrentDiscfg = currentCfg
 	}
 	out(resp)
+}
+
+// Just returns the name of the set discfg name (TODO: will need to change as .discfg gets more complex)
+func getDiscfgNameFromFile() string {
+	currentCfg, err := ioutil.ReadFile(DiscfgFileName)
+	if err == nil {
+		return string(currentCfg)
+	}
+	return ""
 }
 
 // Sets a key value for a given configuration
@@ -148,14 +160,41 @@ func setKey(cmd *cobra.Command, args []string) {
 	resp := ReponseObject{
 		Action: "set",
 	}
+	// TODO: refactor
+	var discfgName string
+	var key string
+	var value string
+	enoughArgs := false
 	if len(args) > 1 {
-		success, _, err := storage.Update(Config, args[0], args[1], args[2])
+		currentName := getDiscfgNameFromFile()
+		if len(args) == 2 && currentName != "" {
+			discfgName = currentName
+			key = args[0]
+			value = args[1]
+			enoughArgs = true
+		} else {
+			if len(args) == 3 {
+				discfgName = args[0]
+				key = args[1]
+				value = args[2]
+				enoughArgs = true
+			}
+		}
+	}
+
+	if enoughArgs {
+		success, storageResponse, err := storage.Update(Config, discfgName, key, value)
 		if err != nil {
-			resp.Error = "Error Creating Configuration"
+			resp.Error = "Error updating key value"
 			resp.Message = err.Error()
 		}
 		if success {
-			resp.Success = "Successfully created the configuration."
+			resp.Success = "Successfully updated key value"
+			resp.Node.Key = key
+			resp.Node.Value = value
+
+			resp.Message = storageResponse.(string)
+
 			// TODO: a verbose, vv, or debug mode which would include the response from AWS
 			// So if verbose, then Message would take on this response...Or perhaps another field.
 			//log.Println(response)
@@ -163,4 +202,50 @@ func setKey(cmd *cobra.Command, args []string) {
 	} else {
 		resp.Error = NotEnoughArgsMsg
 	}
+	out(resp)
+}
+
+func getKey(cmd *cobra.Command, args []string) {
+	resp := ReponseObject{
+		Action: "get",
+	}
+	// TODO: refactor
+	var discfgName string
+	var key string
+	enoughArgs := false
+	if len(args) > 0 {
+		currentName := getDiscfgNameFromFile()
+		if len(args) == 1 && currentName != "" {
+			discfgName = currentName
+			key = args[0]
+			enoughArgs = true
+		} else {
+			if len(args) == 2 {
+				discfgName = args[0]
+				key = args[1]
+				enoughArgs = true
+			}
+		}
+	}
+
+	if enoughArgs {
+		success, storageResponse, err := storage.Get(Config, discfgName, key)
+		if err != nil {
+			resp.Error = "Error getting key value"
+			resp.Message = err.Error()
+		}
+		if success {
+			// TODO: refactor. use the types so stroage.Get() returns the type.
+			// it would be much nicer.
+			r := storageResponse.(map[string]string)
+			parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
+			resp.Node.Id = parsedId
+			resp.Node.Key = key
+			resp.Node.Value = r["value"]
+			// log.Println(storageResponse)
+		}
+	} else {
+		resp.Error = NotEnoughArgsMsg
+	}
+	out(resp)
 }

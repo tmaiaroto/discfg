@@ -79,6 +79,12 @@ var setCmd = &cobra.Command{
 	Long:  `Sets a key value for a given discfg`,
 	Run:   setKey,
 }
+var getCmd = &cobra.Command{
+	Use:   "get",
+	Short: "get key value",
+	Long:  `Gets a key value for a given discfg`,
+	Run:   getKey,
+}
 
 func main() {
 	// Check config
@@ -93,6 +99,7 @@ func main() {
 	DiscfgCmd.AddCommand(whichCmd)
 	DiscfgCmd.AddCommand(createCmd)
 	DiscfgCmd.AddCommand(setCmd)
+	DiscfgCmd.AddCommand(getCmd)
 	DiscfgCmd.Execute()
 
 	//storeField(svc)

@@ -3,7 +3,6 @@ package storage
 import (
 	//"encoding/json"
 	"errors"
-	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
 	ddb "github.com/tmaiaroto/discfg/storage/dynamodb"
 	//"log"
@@ -15,6 +14,7 @@ import (
 type Shipper interface {
 	CreateConfig(config.Config, string) (bool, interface{}, error)
 	Update(config.Config, string, string, string) (bool, interface{}, error)
+	Get(config.Config, string, string) (bool, interface{}, error)
 }
 
 // Standard shipper result contains errors and other information.
@@ -26,18 +26,6 @@ type ShipperResult struct {
 // Defines all of the available shipper interfaces available for use.
 var shippers = map[string]Shipper{
 	"dynamodb": ddb.DynamoDB{},
-}
-
-// Generates a new Snowflake
-func generateId() (uint64, error) {
-	// TODO: return the error so we can do something. Maybe this function isn't even needed...
-	v, _ := gosnow.Default()
-
-	// Alternatively you can set the worker id if you are running multiple snowflakes
-	// TODO
-	// v, err := gosnow.NewSnowFlake(100)
-
-	return v.Next()
 }
 
 // Creates a new configuration returning success true/false along with any response and error.
@@ -56,6 +44,17 @@ func Update(cfg config.Config, name string, key string, value string) (bool, int
 	var err error
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
 		return s.Update(cfg, name, key, value)
+	} else {
+		err = errors.New("Invalid shipper adapter.")
+	}
+	return false, nil, err
+}
+
+// Gets a key value in the configuration
+func Get(cfg config.Config, name string, key string) (bool, interface{}, error) {
+	var err error
+	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
+		return s.Get(cfg, name, key)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
