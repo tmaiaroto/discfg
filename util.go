@@ -44,17 +44,19 @@ type ReponseObject struct {
 // And: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.html#WorkingWithTables.primary.key
 // TODO: Look into DynamoDB's StreamSpecification ... can help with previous values perhaps saving some work.
 type Node struct {
-	Id    uint64      `json:"id,omitempty"`
-	Key   string      `json:"key,omitempty"`
-	Value interface{} `json:"value,omitempty"`
+	//Id    uint64      `json:"id,omitempty"`
+	Version int64       `json:"version,omitempty"`
+	Key     string      `json:"key,omitempty"`
+	Value   interface{} `json:"value,omitempty"`
 }
 
 // Regardless, we will still return what the previous value was just like etcd.
 // Even if there's no way to ever return to that value...At least not from discfg (for now).
 type PrevNode struct {
-	Id    uint64      `json:"id,omitempty"`
-	Key   string      `json:"key,omitempty"`
-	Value interface{} `json:"value,omitempty"`
+	//Id    uint64      `json:"id,omitempty"`
+	Version int64       `json:"version,omitempty"`
+	Key     string      `json:"key,omitempty"`
+	Value   interface{} `json:"value,omitempty"`
 }
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."

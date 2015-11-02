@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
-	// "log"
+	//"log"
 	"strconv"
 )
 
@@ -107,9 +107,17 @@ func setKey(cmd *cobra.Command, args []string) {
 		if success {
 			resp.Success = "Successfully updated key value"
 			resp.Node.Key = key
+			resp.PrevNode.Key = key
+			// TODO: Get these values from the response....have dynamodb return both old and new record? can it?
 			resp.Node.Value = value
 
-			resp.Message = storageResponse.(string)
+			r := storageResponse.(map[string]string)
+			resp.PrevNode.Value = r["value"]
+			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
+			resp.PrevNode.Version = parsedVersion
+
+			// TODO: Is there a better way? DynamoDB doesn't seem to be able to return both the old version and new like I was hoping...
+			resp.Node.Version = parsedVersion + 1
 
 			// TODO: a verbose, vv, or debug mode which would include the response from AWS
 			// So if verbose, then Message would take on this response...Or perhaps another field.
@@ -147,7 +155,8 @@ func getKey(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if enoughArgs {
+	key, keyErr := formatKeyName(key)
+	if enoughArgs && keyErr == nil {
 		success, storageResponse, err := storage.Get(Config, discfgName, key)
 		if err != nil {
 			resp.Error = "Error getting key value"
@@ -157,8 +166,11 @@ func getKey(cmd *cobra.Command, args []string) {
 			// TODO: refactor. use the types so stroage.Get() returns the type.
 			// it would be much nicer.
 			r := storageResponse.(map[string]string)
-			parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
-			resp.Node.Id = parsedId
+			//parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
+			//resp.Node.Id = parsedId
+
+			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
+			resp.Node.Version = parsedVersion
 			resp.Node.Key = key
 			resp.Node.Value = r["value"]
 			// log.Println(storageResponse)
