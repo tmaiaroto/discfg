@@ -2,12 +2,14 @@ package database
 
 import (
 	//"errors"
+	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
 	//"log"
 	"strconv"
+	"strings"
 )
 
 // Each shipper has a struct which implements the Shipper interface.
@@ -17,12 +19,8 @@ type DynamoDB struct {
 // Generates a new Snowflake
 func generateId() int64 {
 	// TODO: return the error so we can do something. Maybe this function isn't even needed...
+	// Or maybe return it in the format dynamodb wants using aws package N: { aws.String() } ...
 	v, _ := gosnow.Default()
-
-	// Alternatively you can set the worker id if you are running multiple snowflakes
-	// TODO
-	// v, err := gosnow.NewSnowFlake(100)
-
 	id, _ := v.Next()
 
 	return int64(id)
@@ -40,7 +38,7 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 
 	params := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{ // Required
+			{
 				AttributeName: aws.String("k"),
 				AttributeType: aws.String("S"),
 			},
@@ -50,46 +48,23 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 			},
 			// More values...
 		},
-		KeySchema: []*dynamodb.KeySchemaElement{ // Required
+		KeySchema: []*dynamodb.KeySchemaElement{
 			// One is required, but we use both a HASH (key name) and a RANGE (Snowflake).
 			{
-				AttributeName: aws.String("k"),    // Required
-				KeyType:       aws.String("HASH"), // Required
+				AttributeName: aws.String("k"),
+				KeyType:       aws.String("HASH"),
 			},
 			{
-				AttributeName: aws.String("id"),    // Required
-				KeyType:       aws.String("RANGE"), // Required
+				AttributeName: aws.String("id"),
+				KeyType:       aws.String("RANGE"),
 			},
 		},
-		// GlobalSecondaryIndexes: []*dynamodb.GlobalSecondaryIndex{
-		// 	{
-		// 		IndexName: aws.String("KeyIndex"),
-		// 		KeySchema: []*dynamodb.KeySchemaElement{
-		// 			{
-		// 				AttributeName: aws.String("k"),
-		// 				KeyType:       aws.String("HASH"),
-		// 			},
-		// 		},
-		// 		Projection: &dynamodb.Projection{
-		// 			NonKeyAttributes: []*string{
-		// 				aws.String("k"),
-		// 			},
-		// 			ProjectionType: aws.String("INCLUDE"),
-		// 		},
-		// 		// Annoying we need to provision for this too...
-		// 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
-		// 			ReadCapacityUnits:  aws.Int64(1),
-		// 			WriteCapacityUnits: aws.Int64(1),
-		// 		},
-		// 	},
-		// },
-
 		// Hard to estimate really. Should be passed along via command line when creating a new config.
 		// Along with the table name. This will let people choose. Though it's kinda annoying someone must
 		// think about this...
 		// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ProvisionedThroughputIntro.html
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{ // Required
-			ReadCapacityUnits:  aws.Int64(1), // Required
+			ReadCapacityUnits:  aws.Int64(2), // Required
 			WriteCapacityUnits: aws.Int64(1), // Required
 		},
 		TableName: aws.String(tableName), // Required
@@ -118,21 +93,42 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	sid := generateId()
 	sidStr := strconv.FormatInt(sid, 10)
 
+	keys := strings.Split(key, "/")
+	parents := []*string{}
+	if len(keys) > 2 {
+		// Remove the first and last one because they won't be parents
+		keys = keys[1 : len(keys)-1]
+
+		// Keep appending previous path so each parent key is an absolute path
+		prevKey := ""
+		var buffer bytes.Buffer
+		for i := range keys {
+			buffer.WriteString(prevKey)
+			buffer.WriteString("/")
+			buffer.WriteString(keys[i])
+			prevKey = buffer.String()
+			parents = append(parents, aws.String(prevKey))
+			buffer.Reset()
+		}
+	}
+
+	// DynamoDB type cheat sheet:
+	// B: []byte("some bytes")
+	// BOOL: aws.Bool(true)
+	// BS: [][]byte{[]byte("bytes and bytes")}
+	// L: []*dynamodb.AttributeValue{{...recursive values...}}
+	// M: map[string]*dynamodb.AttributeValue{"key": {...recursive...} }
+	// N: aws.String("number")
+	// NS: []*String{aws.String("number"), aws.String("number")}
+	// NULL: aws.Bool(true)
+	// S: aws.String("string")
+	// SS: []*string{aws.String("string"), aws.String("string")}
+
+	// If always putting new items, there's no conditional update.
+	// But the only way to update is to make the items have a HASH only index instead of HASH + RANGE.
+	//
 	params := &dynamodb.PutItemInput{
 		Item: map[string]*dynamodb.AttributeValue{
-			// DynamoDB type cheat sheet:
-			// B: []byte("some bytes")
-			// BOOL: aws.Bool(true)
-			// BS: [][]byte{[]byte("bytes and bytes")}
-			// L: []*dynamodb.AttributeValue{{...recursive values...}}
-			// M: map[string]*dynamodb.AttributeValue{"key": {...recursive...} }
-			// N: aws.String("number")
-			// NS: []*String{aws.String("number"), aws.String("number")}
-			// NULL: aws.Bool(true)
-			// S: aws.String("string")
-			// SS: []*string{aws.String("string"), aws.String("string")}
-			//
-			// keys need not be defined on CreateTable() - technically only the primary key need be defined upon table creation.
 			"id": {
 				N: aws.String(sidStr),
 			},
@@ -145,123 +141,12 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 			"v": {
 				S: aws.String(value),
 			},
+			// The parent path(s)
+			"parents": {
+				SS: parents,
+			},
 		},
 		TableName: aws.String(name), // Required
-		// Optional stuff...Will want to use the condtional operations though...
-		//
-		// ConditionExpression: aws.String("ConditionExpression"),
-		// ConditionalOperator: aws.String("ConditionalOperator"),
-		// Expected: map[string]*dynamodb.ExpectedAttributeValue{
-		// 	"Key": { // Required
-		// 		AttributeValueList: []*dynamodb.AttributeValue{
-		// 			{ // Required
-		// 				B:    []byte("PAYLOAD"),
-		// 				BOOL: aws.Bool(true),
-		// 				BS: [][]byte{
-		// 					[]byte("PAYLOAD"), // Required
-		// 					// More values...
-		// 				},
-		// 				L: []*dynamodb.AttributeValue{
-		// 					{ // Required
-		// 					// Recursive values...
-		// 					},
-		// 					// More values...
-		// 				},
-		// 				M: map[string]*dynamodb.AttributeValue{
-		// 					"Key": { // Required
-		// 					// Recursive values...
-		// 					},
-		// 					// More values...
-		// 				},
-		// 				N: aws.String("NumberAttributeValue"),
-		// 				NS: []*string{
-		// 					aws.String("NumberAttributeValue"), // Required
-		// 					// More values...
-		// 				},
-		// 				NULL: aws.Bool(true),
-		// 				S:    aws.String("StringAttributeValue"),
-		// 				SS: []*string{
-		// 					aws.String("StringAttributeValue"), // Required
-		// 					// More values...
-		// 				},
-		// 			},
-		// 			// More values...
-		// 		},
-		// 		ComparisonOperator: aws.String("ComparisonOperator"),
-		// 		Exists:             aws.Bool(true),
-		// 		Value: &dynamodb.AttributeValue{
-		// 			B:    []byte("PAYLOAD"),
-		// 			BOOL: aws.Bool(true),
-		// 			BS: [][]byte{
-		// 				[]byte("PAYLOAD"), // Required
-		// 				// More values...
-		// 			},
-		// 			L: []*dynamodb.AttributeValue{
-		// 				{ // Required
-		// 				// Recursive values...
-		// 				},
-		// 				// More values...
-		// 			},
-		// 			M: map[string]*dynamodb.AttributeValue{
-		// 				"Key": { // Required
-		// 				// Recursive values...
-		// 				},
-		// 				// More values...
-		// 			},
-		// 			N: aws.String("NumberAttributeValue"),
-		// 			NS: []*string{
-		// 				aws.String("NumberAttributeValue"), // Required
-		// 				// More values...
-		// 			},
-		// 			NULL: aws.Bool(true),
-		// 			S:    aws.String("StringAttributeValue"),
-		// 			SS: []*string{
-		// 				aws.String("StringAttributeValue"), // Required
-		// 				// More values...
-		// 			},
-		// 		},
-		// 	},
-		// 	// More values...
-		// },
-		// ExpressionAttributeNames: map[string]*string{
-		// 	"Key": aws.String("AttributeName"), // Required
-		// 	// More values...
-		// },
-		// ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-		// 	"Key": { // Required
-		// 		B:    []byte("PAYLOAD"),
-		// 		BOOL: aws.Bool(true),
-		// 		BS: [][]byte{
-		// 			[]byte("PAYLOAD"), // Required
-		// 			// More values...
-		// 		},
-		// 		L: []*dynamodb.AttributeValue{
-		// 			{ // Required
-		// 			// Recursive values...
-		// 			},
-		// 			// More values...
-		// 		},
-		// 		M: map[string]*dynamodb.AttributeValue{
-		// 			"Key": { // Required
-		// 			// Recursive values...
-		// 			},
-		// 			// More values...
-		// 		},
-		// 		N: aws.String("NumberAttributeValue"),
-		// 		NS: []*string{
-		// 			aws.String("NumberAttributeValue"), // Required
-		// 			// More values...
-		// 		},
-		// 		NULL: aws.Bool(true),
-		// 		S:    aws.String("StringAttributeValue"),
-		// 		SS: []*string{
-		// 			aws.String("StringAttributeValue"), // Required
-		// 			// More values...
-		// 		},
-		// 	},
-		// 	// More values...
-		// },
-		//
 		// The following will return info...
 		// Needs to be one of:  [INDEXES, TOTAL, NONE]
 		// ReturnConsumedCapacity:      aws.String("ReturnConsumedCapacity"),
