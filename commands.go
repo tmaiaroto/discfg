@@ -180,3 +180,52 @@ func getKey(cmd *cobra.Command, args []string) {
 	}
 	out(resp)
 }
+
+func deleteKey(cmd *cobra.Command, args []string) {
+	resp := ReponseObject{
+		Action: "delete",
+	}
+	// TODO: refactor
+	var discfgName string
+	var key string
+	enoughArgs := false
+	if len(args) > 0 {
+		currentName := getDiscfgNameFromFile()
+		if len(args) == 1 && currentName != "" {
+			discfgName = currentName
+			key = args[0]
+			enoughArgs = true
+		} else {
+			if len(args) == 2 {
+				discfgName = args[0]
+				key = args[1]
+				enoughArgs = true
+			}
+		}
+	}
+
+	key, keyErr := formatKeyName(key)
+	if enoughArgs && keyErr == nil {
+		success, storageResponse, err := storage.Delete(Config, discfgName, key)
+		if err != nil {
+			resp.Error = "Error getting key value"
+			resp.Message = err.Error()
+		}
+		if success {
+			r := storageResponse.(map[string]string)
+			//parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
+			//resp.Node.Id = parsedId
+
+			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
+			resp.Node.Version = (parsedVersion + 1)
+			resp.Node.Key = key
+			resp.PrevNode.Version = parsedVersion
+			resp.PrevNode.Key = key
+			resp.PrevNode.Value = r["value"]
+			// log.Println(storageResponse)
+		}
+	} else {
+		resp.Error = NotEnoughArgsMsg
+	}
+	out(resp)
+}

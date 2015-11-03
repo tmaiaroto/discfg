@@ -15,6 +15,7 @@ type Shipper interface {
 	CreateConfig(config.Config, string) (bool, interface{}, error)
 	Update(config.Config, string, string, string) (bool, interface{}, error)
 	Get(config.Config, string, string) (bool, interface{}, error)
+	Delete(config.Config, string, string) (bool, interface{}, error)
 }
 
 // Standard shipper result contains errors and other information.
@@ -55,6 +56,17 @@ func Get(cfg config.Config, name string, key string) (bool, interface{}, error) 
 	var err error
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
 		return s.Get(cfg, name, key)
+	} else {
+		err = errors.New("Invalid shipper adapter.")
+	}
+	return false, nil, err
+}
+
+// Deletes a key value in the configuration
+func Delete(cfg config.Config, name string, key string) (bool, interface{}, error) {
+	var err error
+	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
+		return s.Delete(cfg, name, key)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}

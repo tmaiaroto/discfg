@@ -24,25 +24,41 @@ type ReponseObject struct {
 	Success string `json:"-"`
 }
 
-// {
-//     "action": "set",
-//     "node": {
-//         "createdIndex": 2,
-//         "key": "/message",
-//         "modifiedIndex": 2,
-//         "value": "Hello world"
-//     }
-// }
-
-// Unlike etcd, we call our "index" an "id" ... But (for now) a history will not be kept.
-// These are not atomic counters (can't be, DynamoDB is distributed). They are snowflakes.
-// Snowflake generates "roughly" sortable values. Might get interesting. Subject to change.
-// I'd love to call it an index, but that would be misleading and technically inaccurate.
-// However, don't think the snowflake is useless. It serves another important purpose
-// when it comes to DynamoDB. It helps distribute the data.
-// See: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GuidelinesForTables.html#GuidelinesForTables.UniformWorkload
+// NOTES ON NODES:
+// Unlike etcd, there is no "index" key because discfg doesn't try to be a state machine like etcd.
+// The index there refers to some internal state of the entire system and certain actions advance that state.
+// discfg does not have a distributed lock system nor this sense of global state.
+//
+// However, it is useful for applications (and humans) to get a sense of change. So two thoughts:
+//   1. An "id" value using snowflake (so it's roughly sortable - the thought being sequential enough for discfg's needs)
+//   2. A "version" value that simply increments on each update
+//
+// If using snowflake ids, it would make sense to add those values as part of the index (RANGE). It would certainly
+// help DynaoDB distribute the data...
+// See: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GuidelinesForTables.html#GuidelinesForTables.UniformWorkloa
 // And: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.html#WorkingWithTables.primary.key
-// TODO: Look into DynamoDB's StreamSpecification ... can help with previous values perhaps saving some work.
+//
+// The challenge then here is there wouldn't be conditional updates by DynamoDB design. Those would need to be added
+// and it would require more queries. The database would be append only (which has its own benefits). Then there would
+// eventually need to be some sort of expiration on old items. Since one of the gaols of discfg is cost efficiency,
+// it doesn't make sense to keep old items around. Plus, going backwards in time is not a typical need for a configuration
+// service. The great thing about etcd's state here is the ability to watch for changes and should that HTTP connection
+// be interrupted, it could be resumed from a specific point. This is just one reason for that state index.
+//
+// discfg does not have this feature. There is no way to watch for a key update because discfg is not meant to run in
+// persistence. The data is of course, but the service is not. It's designed to run on demand CLI or AWS Lambda.
+// It's simply a different design decision in order to hit a goal. discfg's answer for this need would be to reach for
+// other AWS services to push notifications out (SNS), add to a message queue (SQS), etc.
+//
+// So with that in mind, a simple version is found on each node. While a bit naive, it's effective for many situations.
+// Not seen on this struct (for now), but stored in DynamoDB is also a list of the parent nodes (full paths).
+// This is for traversing needs.
+//
+// Another great piece of DynamoDB documentation with regard to counters and conditional writes can be found here:
+// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters
+//
+// Again, this highlights discfg's source of inspriation (etcd) and difference from it.
+//
 type Node struct {
 	//Id    uint64      `json:"id,omitempty"`
 	Version int64       `json:"version,omitempty"`
@@ -50,8 +66,7 @@ type Node struct {
 	Value   interface{} `json:"value,omitempty"`
 }
 
-// Regardless, we will still return what the previous value was just like etcd.
-// Even if there's no way to ever return to that value...At least not from discfg (for now).
+// On an update, the previous node will also be returned.
 type PrevNode struct {
 	//Id    uint64      `json:"id,omitempty"`
 	Version int64       `json:"version,omitempty"`

@@ -209,10 +209,7 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	return success, result, err
 }
 
-// Query results are always sorted by the range attribute value. If the data type of the range attribute is Number, the results are returned in numeric order;
-// otherwise, the results are returned in order of ASCII character code values. By default, the sort order is ascending. To reverse the order, set the
-// ScanIndexForward parameter to false.
-
+// Gets a key in DynamoDB
 func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, interface{}, error) {
 	var err error
 	svc := Svc(cfg)
@@ -260,6 +257,42 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, interf
 			// result["id"] = *response.Items[0]["id"].N
 			result["value"] = *response.Items[0]["value"].S
 			result["version"] = *response.Items[0]["version"].N
+		}
+	}
+
+	return success, result, err
+}
+
+// Deletes a key in DynamoDB
+func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, interface{}, error) {
+	var err error
+	svc := Svc(cfg)
+	success := false
+	result := make(map[string]string)
+
+	params := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{ // Required
+			"key": {
+				S: aws.String(key),
+			},
+		},
+		TableName:    aws.String(name),
+		ReturnValues: aws.String("ALL_OLD"),
+		// TODO: allow an option to be passed for conditional delete (very nice feature to have)
+		// ConditionExpression: aws.String("ConditionExpression"),
+		//
+		// TODO: think about this for statistics
+		// INDEXES | TOTAL | NONE
+		//ReturnConsumedCapacity: aws.String("ReturnConsumedCapacity"),
+	}
+	response, err := svc.DeleteItem(params)
+	if err != nil {
+		return success, nil, err
+	} else {
+		success = true
+		if len(response.Attributes) > 0 {
+			result["value"] = *response.Attributes["value"].S
+			result["version"] = *response.Attributes["version"].N
 		}
 	}
 

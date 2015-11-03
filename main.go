@@ -85,6 +85,12 @@ var getCmd = &cobra.Command{
 	Long:  `Gets a key value for a given discfg`,
 	Run:   getKey,
 }
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "delete key",
+	Long:  `Deletes a key for a given discfg`,
+	Run:   deleteKey,
+}
 
 func main() {
 	// Check config
@@ -100,6 +106,7 @@ func main() {
 	DiscfgCmd.AddCommand(createCmd)
 	DiscfgCmd.AddCommand(setCmd)
 	DiscfgCmd.AddCommand(getCmd)
+	DiscfgCmd.AddCommand(deleteCmd)
 	DiscfgCmd.Execute()
 
 	//storeField(svc)
