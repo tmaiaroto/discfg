@@ -7,8 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
-	//"log"
+	"log"
 	//"strconv"
+	//"encoding/json"
 	"strings"
 )
 
@@ -96,22 +97,26 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 
 	keys := strings.Split(key, "/")
 	parents := []*string{}
-	if len(keys) > 2 {
-		// Remove the first and last one because they won't be parents
-		keys = keys[1 : len(keys)-1]
-
+	if len(keys) > 0 {
 		// Keep appending previous path so each parent key is an absolute path
 		prevKey := ""
 		var buffer bytes.Buffer
 		for i := range keys {
-			buffer.WriteString(prevKey)
-			buffer.WriteString("/")
-			buffer.WriteString(keys[i])
-			prevKey = buffer.String()
-			parents = append(parents, aws.String(prevKey))
-			buffer.Reset()
+			// Don't take an empty value or itself as a parent
+			if keys[i] != "" && keys[i] != key {
+				buffer.WriteString(prevKey)
+				buffer.WriteString("/")
+				buffer.WriteString(keys[i])
+				prevKey = buffer.String()
+				parents = append(parents, aws.String(prevKey))
+				buffer.Reset()
+			}
 		}
 	}
+
+	// TODO: Fix - the panic is when there are no child. parents slice has issues.
+	// TODO: JSON seems to be saving...but check output formatting (unescaping, parsing - when possible)
+	log.Println(value)
 
 	// DynamoDB type cheat sheet:
 	// B: []byte("some bytes")
@@ -145,15 +150,17 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 		},
 
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			// value value
+			// value (always a string)
 			":value": {
 				S: aws.String(value),
+				// Always store bytes?
+				// B: []byte(value),
 			},
-			// parents value
+			// parents
 			":pv": {
 				SS: parents,
 			},
-			// version increment value
+			// version increment
 			":i": {
 				N: aws.String("1"),
 			},
@@ -203,8 +210,10 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	}
 
 	// The old values
-	result["value"] = *response.Attributes["value"].S
-	result["version"] = *response.Attributes["version"].N
+	if val, ok := response.Attributes["value"]; ok {
+		result["value"] = *val.S
+		result["version"] = *response.Attributes["version"].N
+	}
 
 	return success, result, err
 }

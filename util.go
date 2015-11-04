@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	//"github.com/asaskevich/govalidator"
+	//"github.com/pquerna/ffjson/ffjson"
 	"io/ioutil"
 )
 
@@ -61,17 +62,18 @@ type ReponseObject struct {
 //
 type Node struct {
 	//Id    uint64      `json:"id,omitempty"`
-	Version int64       `json:"version,omitempty"`
-	Key     string      `json:"key,omitempty"`
-	Value   interface{} `json:"value,omitempty"`
+	Version int64           `json:"version,omitempty"`
+	Key     string          `json:"key,omitempty"`
+	Value   string          `json:"value,omitempty"`
+	Raw     json.RawMessage `json:"json,omitempty"`
 }
 
 // On an update, the previous node will also be returned.
 type PrevNode struct {
 	//Id    uint64      `json:"id,omitempty"`
-	Version int64       `json:"version,omitempty"`
-	Key     string      `json:"key,omitempty"`
-	Value   interface{} `json:"value,omitempty"`
+	Version int64  `json:"version,omitempty"`
+	Key     string `json:"key,omitempty"`
+	Value   string `json:"value,omitempty"`
 }
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
@@ -81,7 +83,10 @@ const DiscfgFileName = ".discfg"
 func out(resp ReponseObject) {
 	switch Config.OutputFormat {
 	case "json":
-		o, _ := json.Marshal(resp)
+		o, _ := json.Marshal(&resp)
+		// TODO: Benchmark this - is it faster?
+		// o, _ := ffjson.Marshal(&resp)
+		//
 		// TODO: verbose mode here too? Shouldn't be in a situation where it can't be marshaled but who knows.
 		// Always best to handle errors.
 		// if(oErr) {
@@ -98,7 +103,12 @@ func out(resp ReponseObject) {
 			successLabel(resp.Success)
 		}
 		if resp.Message != "" {
-			fmt.Print(resp.Message + "\n")
+			fmt.Print(resp.Message)
+			fmt.Print("\n")
+		}
+		if resp.Node.Value != "" {
+			fmt.Print(resp.Node.Value)
+			fmt.Print("\n")
 		}
 	}
 }
@@ -127,12 +137,15 @@ func formatKeyName(key string) (string, error) {
 	var err error
 	k := ""
 	if len(key) > 0 {
+		// If the key does not begin with a slash, prepend one.
 		if substr(key, 0, 1) != "/" {
 			var buffer bytes.Buffer
 			buffer.WriteString("/")
 			buffer.WriteString(key)
 			k = buffer.String()
 			buffer.Reset()
+		} else {
+			k = key
 		}
 	} else {
 		return "", errors.New("Missing key name")
@@ -144,7 +157,7 @@ func formatKeyName(key string) (string, error) {
 		return "", errors.New("Invalid key name")
 	}
 
-	// Remove any trailing slashes (unless there's only one, the root)
+	// Remove any trailing slashes (unless there's only one, the root).
 	if len(k) > 1 {
 		for k[len(k)-1:] == "/" {
 			k = k[:len(k)-1]
@@ -152,4 +165,15 @@ func formatKeyName(key string) (string, error) {
 	}
 
 	return k, err
+}
+
+func isJSONString(s string) bool {
+	var js string
+	err := json.Unmarshal([]byte(s), &js)
+	return err == nil
+}
+func isJSON(s string) bool {
+	var js map[string]interface{}
+	return json.Unmarshal([]byte(s), &js) == nil
+
 }

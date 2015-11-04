@@ -2,10 +2,11 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
-	//"log"
+	"log"
 	"strconv"
 )
 
@@ -107,21 +108,19 @@ func setKey(cmd *cobra.Command, args []string) {
 		if success {
 			resp.Success = "Successfully updated key value"
 			resp.Node.Key = key
-			resp.PrevNode.Key = key
-			// TODO: Get these values from the response....have dynamodb return both old and new record? can it?
 			resp.Node.Value = value
+			resp.Node.Version = 1
 
+			// Only set PrevNode if there was a previous value
 			r := storageResponse.(map[string]string)
-			resp.PrevNode.Value = r["value"]
-			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
-			resp.PrevNode.Version = parsedVersion
-
-			// TODO: Is there a better way? DynamoDB doesn't seem to be able to return both the old version and new like I was hoping...
-			resp.Node.Version = parsedVersion + 1
-
-			// TODO: a verbose, vv, or debug mode which would include the response from AWS
-			// So if verbose, then Message would take on this response...Or perhaps another field.
-			//log.Println(response)
+			if val, ok := r["value"]; ok {
+				resp.PrevNode.Key = key
+				resp.PrevNode.Value = val
+				prevVersion, _ := strconv.ParseInt(r["version"], 10, 64)
+				resp.PrevNode.Version = prevVersion
+				// Update the current node's value if there was a previous version
+				resp.Node.Version = prevVersion + 1
+			}
 		}
 	} else {
 		resp.Error = NotEnoughArgsMsg
@@ -173,6 +172,12 @@ func getKey(cmd *cobra.Command, args []string) {
 			resp.Node.Version = parsedVersion
 			resp.Node.Key = key
 			resp.Node.Value = r["value"]
+			log.Println(isJSON(resp.Node.Value))
+			if isJSON(resp.Node.Value) {
+				resp.Node.Raw = json.RawMessage(r["value"])
+				//resp.Node.Value = ""
+			}
+
 			// log.Println(storageResponse)
 		}
 	} else {
