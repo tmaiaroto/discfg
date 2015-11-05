@@ -70,8 +70,7 @@ Fortunately, DynamoDB has conditional operations so it is not possible to make u
 For example, if the value is not what it is expected to be when the operation gets to DynamoDB, it will fail.
 
 So this may count discfg out for certain tasks and that's ok. Keep in mind what discfg was created for. 
-It was not created to compete with or replace etcd. It's merely inspired by etcd. It is not stateful in
-the same way, so if a history and atomic counters are necessary for your application - use etcd.
+It was not created to compete with or replace etcd. It's merely inspired by etcd.
 
 Since Lambdas can't run forever, there is no reasonable way to listen for changes. Sure, other AWS services
 could be used for this, but for now discfg is intended to have a simple scope. So while etcd has long polling 
@@ -80,6 +79,9 @@ for changed keys, discfg does not. For now...But SNS or SQS may be something to 
 Related to listening for changes, another difference is that discfg does not store a history like etcd. 
 This is useful in etcd because if the long polling got interrupted, it could continue where it left off.
 Keeping a history of changes is not, currently, a goal of discfg nor is long polling for key changes.
+
+discfg is using DynamoDB (for now) so keep in mind there's a document size limit of 400kb while etcd 
+(currently) has no size limit.
 
 There are many differences by design. Both good and bad depending on the use case. If the "good" differences
 seem to make sense to you, then discfg might be the tool for you.
