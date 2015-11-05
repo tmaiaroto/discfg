@@ -20,7 +20,7 @@ convention. Projects like etcd are **much** more complex because they handle the
 quorum whereas discfg lets existing storage engines (DynamoDB for now) handle that.
 
 
-When building applications or services, configuration and state become a challenge. Especially 
+When building _applications_ or services, configuration and state become a challenge. Especially 
 in a distributed environment or when working with others.
 
 You don't want to store the config inside the codebase or each microservice because that makes for
