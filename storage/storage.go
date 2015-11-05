@@ -13,9 +13,9 @@ import (
 // who knows what will happen in the future. A simple interface never hurts.
 type Shipper interface {
 	CreateConfig(config.Config, string) (bool, interface{}, error)
-	Update(config.Config, string, string, string) (bool, interface{}, error)
-	Get(config.Config, string, string) (bool, interface{}, error)
-	Delete(config.Config, string, string) (bool, interface{}, error)
+	Update(config.Config, string, string, string) (bool, config.Node, error)
+	Get(config.Config, string, string) (bool, config.Node, error)
+	Delete(config.Config, string, string) (bool, config.Node, error)
 }
 
 // Standard shipper result contains errors and other information.
@@ -41,34 +41,37 @@ func CreateConfig(cfg config.Config, name string) (bool, interface{}, error) {
 }
 
 // Updates a key value in the configuration
-func Update(cfg config.Config, name string, key string, value string) (bool, interface{}, error) {
+func Update(cfg config.Config, name string, key string, value string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
 		return s.Update(cfg, name, key, value)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
-	return false, nil, err
+	return false, node, err
 }
 
 // Gets a key value in the configuration
-func Get(cfg config.Config, name string, key string) (bool, interface{}, error) {
+func Get(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
 		return s.Get(cfg, name, key)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
-	return false, nil, err
+	return false, node, err
 }
 
 // Deletes a key value in the configuration
-func Delete(cfg config.Config, name string, key string) (bool, interface{}, error) {
+func Delete(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
 		return s.Delete(cfg, name, key)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
-	return false, nil, err
+	return false, node, err
 }

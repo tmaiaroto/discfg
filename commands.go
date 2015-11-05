@@ -2,30 +2,25 @@
 package main
 
 import (
-	"encoding/json"
 	"github.com/spf13/cobra"
+	"github.com/tmaiaroto/discfg/config"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
-	"log"
-	"strconv"
+	//"log"
 )
 
 // Creates a new configuration
 func createCfg(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "create",
 	}
 	if len(args) > 0 {
 		success, _, err := storage.CreateConfig(Config, args[0])
 		if err != nil {
-			resp.Error = "Error Creating Configuration"
-			resp.Message = err.Error()
+			resp.Error = err.Error()
 		}
 		if success {
-			resp.Success = "Successfully created the configuration"
-			// TODO: a verbose, vv, or debug mode which would include the response from AWS
-			// So if verbose, then Message would take on this response...Or perhaps another field.
-			//log.Println(response)
+			resp.Message = "Successfully created the configuration"
 		}
 	} else {
 		resp.Error = NotEnoughArgsMsg
@@ -37,17 +32,16 @@ func createCfg(cmd *cobra.Command, args []string) {
 
 // Sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
 func use(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "use",
 	}
 	if len(args) > 0 {
 		cc := []byte(args[0])
 		err := ioutil.WriteFile(".discfg", cc, 0644)
 		if err != nil {
-			resp.Error = "There was a problem setting the discfg to use"
-			resp.Message = err.Error()
+			resp.Error = err.Error()
 		} else {
-			resp.Success = "Set current working discfg to " + args[0]
+			resp.Message = "Set current working discfg to " + args[0]
 			resp.CurrentDiscfg = args[0]
 		}
 	} else {
@@ -58,14 +52,14 @@ func use(cmd *cobra.Command, args []string) {
 
 // Shows which discfg configuration is currently active for use
 func which(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "which",
 	}
 	currentCfg := getDiscfgNameFromFile()
 	if currentCfg != "" {
-		resp.Message = "No current working configuration has been set at this path."
+		resp.Error = "No current working configuration has been set at this path."
 	} else {
-		resp.Message = "Current working configuration: " + currentCfg
+		resp.Error = "Current working configuration: " + currentCfg
 		resp.CurrentDiscfg = currentCfg
 	}
 	out(resp)
@@ -73,7 +67,7 @@ func which(cmd *cobra.Command, args []string) {
 
 // Sets a key value for a given configuration
 func setKey(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "set",
 	}
 	// TODO: refactor
@@ -106,20 +100,16 @@ func setKey(cmd *cobra.Command, args []string) {
 			resp.Message = err.Error()
 		}
 		if success {
-			resp.Success = "Successfully updated key value"
 			resp.Node.Key = key
-			resp.Node.Value = value
+			resp.Node.Value = []byte(value)
 			resp.Node.Version = 1
 
 			// Only set PrevNode if there was a previous value
-			r := storageResponse.(map[string]string)
-			if val, ok := r["value"]; ok {
+			if storageResponse.Value != nil {
+				resp.PrevNode = storageResponse
 				resp.PrevNode.Key = key
-				resp.PrevNode.Value = val
-				prevVersion, _ := strconv.ParseInt(r["version"], 10, 64)
-				resp.PrevNode.Version = prevVersion
 				// Update the current node's value if there was a previous version
-				resp.Node.Version = prevVersion + 1
+				resp.Node.Version = resp.PrevNode.Version + 1
 			}
 		}
 	} else {
@@ -132,7 +122,7 @@ func setKey(cmd *cobra.Command, args []string) {
 }
 
 func getKey(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "get",
 	}
 	// TODO: refactor
@@ -158,27 +148,10 @@ func getKey(cmd *cobra.Command, args []string) {
 	if enoughArgs && keyErr == nil {
 		success, storageResponse, err := storage.Get(Config, discfgName, key)
 		if err != nil {
-			resp.Error = "Error getting key value"
-			resp.Message = err.Error()
+			resp.Error = err.Error()
 		}
 		if success {
-			// TODO: refactor. use the types so stroage.Get() returns the type.
-			// it would be much nicer.
-			r := storageResponse.(map[string]string)
-			//parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
-			//resp.Node.Id = parsedId
-
-			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
-			resp.Node.Version = parsedVersion
-			resp.Node.Key = key
-			resp.Node.Value = r["value"]
-			log.Println(isJSON(resp.Node.Value))
-			if isJSON(resp.Node.Value) {
-				resp.Node.Raw = json.RawMessage(r["value"])
-				//resp.Node.Value = ""
-			}
-
-			// log.Println(storageResponse)
+			resp.Node = storageResponse
 		}
 	} else {
 		resp.Error = NotEnoughArgsMsg
@@ -187,7 +160,7 @@ func getKey(cmd *cobra.Command, args []string) {
 }
 
 func deleteKey(cmd *cobra.Command, args []string) {
-	resp := ReponseObject{
+	resp := config.ResponseObject{
 		Action: "delete",
 	}
 	// TODO: refactor
@@ -217,16 +190,13 @@ func deleteKey(cmd *cobra.Command, args []string) {
 			resp.Message = err.Error()
 		}
 		if success {
-			r := storageResponse.(map[string]string)
-			//parsedId, _ := strconv.ParseUint(r["id"], 10, 64)
-			//resp.Node.Id = parsedId
-
-			parsedVersion, _ := strconv.ParseInt(r["version"], 10, 64)
-			resp.Node.Version = (parsedVersion + 1)
+			resp.Node = storageResponse
 			resp.Node.Key = key
-			resp.PrevNode.Version = parsedVersion
+			resp.Node.Value = nil
+			resp.Node.Version = storageResponse.Version + 1
 			resp.PrevNode.Key = key
-			resp.PrevNode.Value = r["value"]
+			resp.PrevNode.Version = storageResponse.Version
+			resp.PrevNode.Value = storageResponse.Value
 			// log.Println(storageResponse)
 		}
 	} else {

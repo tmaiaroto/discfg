@@ -7,8 +7,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
-	"log"
-	//"strconv"
+	//"log"
+	"strconv"
 	//"encoding/json"
 	"strings"
 )
@@ -82,11 +82,12 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 }
 
 // Updates a key in DynamoDB
-func (db DynamoDB) Update(cfg config.Config, name string, key string, value string) (bool, interface{}, error) {
+func (db DynamoDB) Update(cfg config.Config, name string, key string, value string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	result := make(map[string]string)
+	//result := make(map[string]string)
 
 	// log.Println("Setting on table name: " + name)
 	// log.Println(key)
@@ -116,7 +117,7 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 
 	// TODO: Fix - the panic is when there are no child. parents slice has issues.
 	// TODO: JSON seems to be saving...but check output formatting (unescaping, parsing - when possible)
-	log.Println(value)
+	//log.Println(value)
 
 	// DynamoDB type cheat sheet:
 	// B: []byte("some bytes")
@@ -152,9 +153,9 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			// value (always a string)
 			":value": {
-				S: aws.String(value),
+				//S: aws.String(value),
 				// Always store bytes?
-				// B: []byte(value),
+				B: []byte(value),
 			},
 			// parents
 			":pv": {
@@ -211,19 +212,22 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 
 	// The old values
 	if val, ok := response.Attributes["value"]; ok {
-		result["value"] = *val.S
-		result["version"] = *response.Attributes["version"].N
+		//result["value"] = *val.S
+		node.Value = val.B
+		node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 	}
 
-	return success, result, err
+	return success, node, err
 }
 
 // Gets a key in DynamoDB
-func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, interface{}, error) {
+func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	result := make(map[string]string)
+	//result := make(map[string]string)
+	result := config.Node{}
 
 	// still not clear on what the difference between dynamodb.New() is and session.New()
 	// may only matter if there were multiple queries...we aren't going to have "sessions" ... it's just one command - one query.
@@ -259,13 +263,14 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, interf
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		//fmt.Println(err.Error())
-		return success, nil, err
+		return success, node, err
 	} else {
 		success = true
 		if len(response.Items) > 0 {
 			// result["id"] = *response.Items[0]["id"].N
-			result["value"] = *response.Items[0]["value"].S
-			result["version"] = *response.Items[0]["version"].N
+			//result["value"] = *response.Items[0]["value"].S
+			result.Value = response.Items[0]["value"].B
+			result.Version, _ = strconv.ParseInt(*response.Items[0]["version"].N, 10, 64)
 		}
 	}
 
@@ -273,11 +278,13 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, interf
 }
 
 // Deletes a key in DynamoDB
-func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, interface{}, error) {
+func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
+	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	result := make(map[string]string)
+	//result := make(map[string]string)
+	result := config.Node{}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{ // Required
@@ -296,12 +303,13 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, int
 	}
 	response, err := svc.DeleteItem(params)
 	if err != nil {
-		return success, nil, err
+		return success, node, err
 	} else {
 		success = true
 		if len(response.Attributes) > 0 {
-			result["value"] = *response.Attributes["value"].S
-			result["version"] = *response.Attributes["version"].N
+			//result["value"] = *response.Attributes["value"].S
+			result.Value = response.Attributes["value"].B
+			result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 		}
 	}
 

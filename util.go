@@ -7,80 +7,44 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	//"github.com/asaskevich/govalidator"
+	"strconv"
 	//"github.com/pquerna/ffjson/ffjson"
+	"github.com/tmaiaroto/discfg/config"
 	"io/ioutil"
+	//"strconv"
 )
-
-// Just like etcd, the response object is built in a very similar manner.
-type ReponseObject struct {
-	Action        string   `json:"action"`
-	Node          Node     `json:"node,omitempty"`
-	PrevNode      PrevNode `json:"prevNode,omitempty"`
-	ErrorCode     int      `json:"errorCode,omitempty"`
-	Message       string   `json:"message,omitempty"`
-	CurrentDiscfg string   `json:"currentDiscfg,omitempty"`
-	// Error and Success are human readable short messages meant for CLI, not for JSON response.
-	Error   string `json:"-"`
-	Success string `json:"-"`
-}
-
-// NOTES ON NODES:
-// Unlike etcd, there is no "index" key because discfg doesn't try to be a state machine like etcd.
-// The index there refers to some internal state of the entire system and certain actions advance that state.
-// discfg does not have a distributed lock system nor this sense of global state.
-//
-// However, it is useful for applications (and humans) to get a sense of change. So two thoughts:
-//   1. An "id" value using snowflake (so it's roughly sortable - the thought being sequential enough for discfg's needs)
-//   2. A "version" value that simply increments on each update
-//
-// If using snowflake ids, it would make sense to add those values as part of the index (RANGE). It would certainly
-// help DynaoDB distribute the data...
-// See: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GuidelinesForTables.html#GuidelinesForTables.UniformWorkloa
-// And: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.html#WorkingWithTables.primary.key
-//
-// The challenge then here is there wouldn't be conditional updates by DynamoDB design. Those would need to be added
-// and it would require more queries. The database would be append only (which has its own benefits). Then there would
-// eventually need to be some sort of expiration on old items. Since one of the gaols of discfg is cost efficiency,
-// it doesn't make sense to keep old items around. Plus, going backwards in time is not a typical need for a configuration
-// service. The great thing about etcd's state here is the ability to watch for changes and should that HTTP connection
-// be interrupted, it could be resumed from a specific point. This is just one reason for that state index.
-//
-// discfg does not have this feature. There is no way to watch for a key update because discfg is not meant to run in
-// persistence. The data is of course, but the service is not. It's designed to run on demand CLI or AWS Lambda.
-// It's simply a different design decision in order to hit a goal. discfg's answer for this need would be to reach for
-// other AWS services to push notifications out (SNS), add to a message queue (SQS), etc.
-//
-// So with that in mind, a simple version is found on each node. While a bit naive, it's effective for many situations.
-// Not seen on this struct (for now), but stored in DynamoDB is also a list of the parent nodes (full paths).
-// This is for traversing needs.
-//
-// Another great piece of DynamoDB documentation with regard to counters and conditional writes can be found here:
-// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters
-//
-// Again, this highlights discfg's source of inspriation (etcd) and difference from it.
-//
-type Node struct {
-	//Id    uint64      `json:"id,omitempty"`
-	Version int64           `json:"version,omitempty"`
-	Key     string          `json:"key,omitempty"`
-	Value   string          `json:"value,omitempty"`
-	Raw     json.RawMessage `json:"json,omitempty"`
-}
-
-// On an update, the previous node will also be returned.
-type PrevNode struct {
-	//Id    uint64      `json:"id,omitempty"`
-	Version int64  `json:"version,omitempty"`
-	Key     string `json:"key,omitempty"`
-	Value   string `json:"value,omitempty"`
-}
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
 const DiscfgFileName = ".discfg"
 
 // Output
-func out(resp ReponseObject) {
+func out(resp config.ResponseObject) {
+	// We've stored everything as binary data. But that can be many things.
+	// A string, a number, or even JSON. We can check to see if it's something we can marshal to JSON.
+	// If that fails, then we'll just return it as a string in the JSON response under the "value" key.
+	//
+	// If it isn't JSON, then return a base64 string.
+	// TODO: Add Content-Type field of some sort so there's some context?
+	if resp.Node.Value != nil {
+		if !isJSON(string(resp.Node.Value)) {
+			// Return base64 when not JSON?
+			// b64Str := base64.StdEncoding.EncodeToString(resp.Node.Value)
+			//resp.Node..Value = []byte(strconv.Quote(b64Str))
+			resp.Node.Value = []byte(strconv.Quote(string(resp.Node.Value)))
+		}
+		// The output value is always raw JSON. It is not stored in the data store.
+		// It's simply for display.
+		resp.Node.OutputValue = json.RawMessage(resp.Node.Value)
+	}
+
+	// Same for th PrevNode if set
+	if resp.PrevNode.Value != nil {
+		if !isJSON(string(resp.PrevNode.Value)) {
+			resp.PrevNode.Value = []byte(strconv.Quote(string(resp.PrevNode.Value)))
+		}
+		resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
+	}
+
 	switch Config.OutputFormat {
 	case "json":
 		o, _ := json.Marshal(&resp)
@@ -95,19 +59,24 @@ func out(resp ReponseObject) {
 		// }
 		fmt.Print(string(o))
 	case "human":
-		// Only gets messages... It doesn't get the details of which key was updated, etc. Just that one was or wasn't updated.
 		if resp.Error != "" {
 			errorLabel(resp.Error)
 		}
-		if resp.Success != "" {
-			successLabel(resp.Success)
-		}
-		if resp.Message != "" {
-			fmt.Print(resp.Message)
-			fmt.Print("\n")
-		}
-		if resp.Node.Value != "" {
-			fmt.Print(resp.Node.Value)
+		// if resp.Success != "" {
+		// 	successLabel(resp.Success)
+		// }
+		// if resp.Message != "" {
+		// 	fmt.Print(resp.Message)
+		// 	fmt.Print("\n")
+		// }
+		// If the message is empty, show the value
+		if resp.Node.Value != nil {
+			// No need to put quote around it on the CLI for a human to read.
+			//o, _ := json.Marshal(&resp.Node.Value)
+			//fmt.Print(string(o))
+			fmt.Print(string(resp.Node.Value))
+			// v, _ := strconv.Unquote(string(resp.Node.Value))
+			// fmt.Print(v)
 			fmt.Print("\n")
 		}
 	}
