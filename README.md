@@ -15,7 +15,10 @@ It's heavily inspired by [etcd](https://github.com/coreos/etcd). However, there 
 important differences and the target use case is a bit different.
 
 The goal of discfg is to provide a configuration and service discovery solution for applications. 
-The focus is not on a storage solution, but rather on solutions for configuration and convention.
+The focus is not on creating a storage solution and state, but rather on solutions for configuration 
+and convention. Projects like etcd are **much** more complex because they handle the storage and 
+quorum whereas discfg lets existing storage engines (DynamoDB for now) handle that.
+
 
 When building applications or services, configuration and state become a challenge. Especially 
 in a distributed environment or when working with others.
@@ -33,14 +36,14 @@ more like etcd. Or, you're of course free to put your own API in front of it.
 
 ## Motivations Behind discfg
 
-Two main motivating factors behind making yet another distributed configuration service:
+Three main motivating factors behind making yet another distributed configuration service:
 
 1. Cost. Using DynamoDB (and Lambda to access discfg through a REST API) is incredibly cost effective. 
 There is no server in this situation so it is always cheaper than using something like etcd. Usually 
 significantly so.
 
-2. It's focused on AWS for a reason. When you build out applications using Lambda, you need a distributed
-configuration. So many decisions around discfg and its designed are based on using AWS services.
+2. It's focused on AWS for a reason. When you build out applications using Lambda, a distributed 
+configuration helps. So many decisions around discfg and its designed are based on using AWS services.
 
 3. Developers. We need to share certain configuration data between each other and do a better job of 
 keeping a lot of hard coded configuration out of our code. Not only do we see tons of sensitive credentials
