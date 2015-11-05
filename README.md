@@ -15,8 +15,8 @@ It's heavily inspired by [etcd](https://github.com/coreos/etcd). However, there 
 important differences and the target use case is a bit different.
 
 The goal of discfg is to provide a configuration and service discovery solution for applications. 
-The focus is not on creating a storage solution and state, but rather on solutions for configuration 
-and convention. Projects like etcd are **much** more complex because they handle the storage and 
+The focus is not on creating a storage solution, but rather on solutions for configuration and
+convention. Projects like etcd are **much** more complex because they handle the storage and 
 quorum whereas discfg lets existing storage engines (DynamoDB for now) handle that.
 
 
