@@ -30,7 +30,8 @@ the same as the one above:
 ./discfg set mycfg /mykey '{"json": "works"}'
 ```
 
-Now to retrieve this value:
+Also note that the slash is optional. All keys without a forward slash will have one prepended automatically. 
+That is to say they will be at the root level. Now to retrieve this value:
 
 ```
 ./discfg get /mykey
