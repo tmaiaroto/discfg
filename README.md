@@ -22,7 +22,7 @@ because you've used the AWS CLI tool before and configured them...
 That should create a configuration for you (a table in DynamoDB - US East region by default). 
 The second command there should have set a key called "/mykey" at the root level.
 
-Note: If you did not want to call the ```use``` command or need to work with multiple configurations,
+Note: If you did not want to call the ```use``` command or if you need to work with multiple configurations,
 you can always get and set keys by passing the configuration name. So the following ```set``` command is
 the same as the one above:
 
