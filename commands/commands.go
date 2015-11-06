@@ -1,8 +1,7 @@
 // Command functions
-package main
+package commands
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/config"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
@@ -10,7 +9,7 @@ import (
 )
 
 // Creates a new configuration
-func createCfg(cmd *cobra.Command, args []string) {
+func CreateCfg(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "create",
 	}
@@ -27,11 +26,11 @@ func createCfg(cmd *cobra.Command, args []string) {
 		// TODO: Error code for this, message may not be necessary - is it worthwhile to try and figure out exactly which arguments were missing?
 		// Maybe a future thing to do. I need to git er done right now.
 	}
-	out(resp)
+	return resp
 }
 
 // Sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
-func use(cmd *cobra.Command, args []string) {
+func Use(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "use",
 	}
@@ -47,26 +46,26 @@ func use(cmd *cobra.Command, args []string) {
 	} else {
 		resp.Error = NotEnoughArgsMsg
 	}
-	out(resp)
+	return resp
 }
 
 // Shows which discfg configuration is currently active for use
-func which(cmd *cobra.Command, args []string) {
+func Which(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "which",
 	}
 	currentCfg := getDiscfgNameFromFile()
-	if currentCfg != "" {
+	if currentCfg == "" {
 		resp.Error = "No current working configuration has been set at this path."
 	} else {
-		resp.Error = "Current working configuration: " + currentCfg
+		resp.Message = "Current working configuration: " + currentCfg
 		resp.CurrentDiscfg = currentCfg
 	}
-	out(resp)
+	return resp
 }
 
 // Sets a key value for a given configuration
-func setKey(cmd *cobra.Command, args []string) {
+func SetKey(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "set",
 	}
@@ -118,10 +117,10 @@ func setKey(cmd *cobra.Command, args []string) {
 			resp.Error = keyErr.Error()
 		}
 	}
-	out(resp)
+	return resp
 }
 
-func getKey(cmd *cobra.Command, args []string) {
+func GetKey(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "get",
 	}
@@ -156,10 +155,10 @@ func getKey(cmd *cobra.Command, args []string) {
 	} else {
 		resp.Error = NotEnoughArgsMsg
 	}
-	out(resp)
+	return resp
 }
 
-func deleteKey(cmd *cobra.Command, args []string) {
+func DeleteKey(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "delete",
 	}
@@ -202,5 +201,5 @@ func deleteKey(cmd *cobra.Command, args []string) {
 	} else {
 		resp.Error = NotEnoughArgsMsg
 	}
-	out(resp)
+	return resp
 }

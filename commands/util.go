@@ -1,5 +1,5 @@
 // Various utilities used by commands are found in this file as well as response structs, constants, etc.
-package main
+package commands
 
 import (
 	"bytes"
@@ -9,16 +9,16 @@ import (
 	"regexp"
 	"strconv"
 	//"github.com/pquerna/ffjson/ffjson"
+	ct "github.com/daviddengcn/go-colortext"
 	"github.com/tmaiaroto/discfg/config"
 	"io/ioutil"
-	//"strconv"
 )
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
 const DiscfgFileName = ".discfg"
 
 // Output
-func out(resp config.ResponseObject) {
+func Out(Config config.Config, resp config.ResponseObject) config.ResponseObject {
 	// We've stored everything as binary data. But that can be many things.
 	// A string, a number, or even JSON. We can check to see if it's something we can marshal to JSON.
 	// If that fails, then we'll just return it as a string in the JSON response under the "value" key.
@@ -78,17 +78,39 @@ func out(resp config.ResponseObject) {
 			// v, _ := strconv.Unquote(string(resp.Node.Value))
 			// fmt.Print(v)
 			fmt.Print("\n")
+		} else {
+			if resp.Message != "" {
+				fmt.Println(resp.Message)
+			}
 		}
 	}
+	return resp
+}
+
+// Changes the color for error messages. Good for one line heading. Any lengthy response should probably not be colored with a red background.
+func errorLabel(message string) {
+	ct.ChangeColor(ct.White, true, ct.Red, false)
+	fmt.Print(message)
+	ct.ResetColor()
+	fmt.Println("")
+}
+
+// Changes the color for the messages to green for success.
+func successLabel(message string) {
+	ct.Foreground(ct.Green, true)
+	fmt.Print(message)
+	ct.ResetColor()
+	fmt.Println("")
 }
 
 // Just returns the name of the set discfg name (TODO: will need to change as .discfg gets more complex).
 func getDiscfgNameFromFile() string {
+	name := ""
 	currentCfg, err := ioutil.ReadFile(DiscfgFileName)
 	if err == nil {
-		return string(currentCfg)
+		name = string(currentCfg)
 	}
-	return ""
+	return name
 }
 
 // Simple substring function
