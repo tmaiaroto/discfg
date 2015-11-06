@@ -8,6 +8,51 @@ know of the obvious issues =) That doesn't mean they shoudln't be in there thoug
 
 ------
 
+### Quick Example Usage
+
+Assuming you built the binary to ```discfg``` and you have your AWS credentials under ```~/.aws``` 
+because you've used the AWS CLI tool before and configured them...
+
+```
+./discfg create mycfg    
+./discfg set /mykey '{"json": "works"}'    
+```
+
+That should create a configuration for you (a table in DynamoDB - US East region by default). 
+The second command there should have set a key called "/mykey" at the root level.
+
+Now to retrieve this value:
+
+```
+./discfg get /mykey
+```
+
+To retrieve the value as a JSON response run (and jq is handy here; https://stedolan.github.io/jq):
+
+```
+./discfg get /mykey -f json
+```
+
+You should see something like this:
+
+```
+{
+  "action": "get",
+  "node": {
+    "version": 2,
+    "value": {
+      "foo": "test"
+    }
+  },
+  "prevNode": {}
+}
+```
+
+NOTE: You will only see ```prevNode``` populated upon an update. discfg does not store a history
+of values.
+
+## What Is It?
+
 A distributed configuration service built on top of Amazon Web Services. Specifically, it uses 
 Lambda, DyanmoDB, and API Gateway to access it all. Though it can also be used via command line.
 
