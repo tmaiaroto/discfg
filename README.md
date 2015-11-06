@@ -15,6 +15,7 @@ because you've used the AWS CLI tool before and configured them...
 
 ```
 ./discfg create mycfg    
+./discfg use mycfg    
 ./discfg set /mykey '{"json": "works"}'    
 ```
 
