@@ -9,7 +9,12 @@ type Config struct {
 	CfgName              string
 	StorageInterfaceName string
 	Storage              struct {
-		Region string
+		DynamoDB struct {
+			Region          string
+			AccessKeyId     string
+			SecretAccessKey string
+			CredProfile     string
+		}
 	}
 	Version      string
 	OutputFormat string

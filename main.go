@@ -94,7 +94,11 @@ func main() {
 	DiscfgCmd.AddCommand(versionCmd)
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.Region, "region", "r", "us-east-1", "AWS Region to use")
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.Region, "region", "r", "us-east-1", "AWS Region to use")
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
+
 	//DiscfgCmd.PersistentFlags().StringVarP(&Config.CfgName, "cfgName", "n", "cfg", "The configuration name (cfg)")
 	DiscfgCmd.AddCommand(useCmd)
 	DiscfgCmd.AddCommand(whichCmd)

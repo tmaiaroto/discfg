@@ -4,6 +4,7 @@ import (
 	//"errors"
 	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
@@ -29,7 +30,28 @@ func generateId() int64 {
 
 // Configures DynamoDB service to use
 func Svc(cfg config.Config) *dynamodb.DynamoDB {
-	return dynamodb.New(&aws.Config{Region: aws.String(cfg.Storage.Region)})
+	awsConfig := &aws.Config{Region: aws.String(cfg.Storage.DynamoDB.Region)}
+	// Look in a variety of places for AWS credentials. First, try the credentials file set by AWS CLI tool.
+	// Note the empty string instructs to look under default file path (different based on OS).
+	// This file can have multiple profiles and a default profile will be used unless otherwise configured.
+	// See: https://godoc.org/github.com/aws/aws-sdk-go/aws/credentials#SharedCredentialsProvider
+	creds := credentials.NewSharedCredentials("", cfg.Storage.DynamoDB.CredProfile)
+	_, err := creds.Get()
+	// If that failed, try environment variables.
+	if err != nil {
+		// The following are checked:
+		// Access Key ID: AWS_ACCESS_KEY_ID or AWS_ACCESS_KEY
+		// Secret Access Key: AWS_SECRET_ACCESS_KEY or AWS_SECRET_KEY
+		creds = credentials.NewEnvCredentials()
+	}
+
+	// If credentials were passed via config, then use those. They will take priority over other methods.
+	if cfg.Storage.DynamoDB.AccessKeyId != "" && cfg.Storage.DynamoDB.SecretAccessKey != "" {
+		creds = credentials.NewStaticCredentials(cfg.Storage.DynamoDB.AccessKeyId, cfg.Storage.DynamoDB.SecretAccessKey, "")
+	}
+	awsConfig.Credentials = creds
+
+	return dynamodb.New(awsConfig)
 }
 
 // Creates a new table for a configuration
