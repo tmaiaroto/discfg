@@ -2,10 +2,13 @@
 package commands
 
 import (
+	"bytes"
 	"github.com/tmaiaroto/discfg/config"
 	"github.com/tmaiaroto/discfg/storage"
 	"io/ioutil"
-	//"log"
+	"strconv"
+	"time"
+	// "log"
 )
 
 // Creates a new configuration
@@ -120,6 +123,7 @@ func SetKey(Config config.Config, args []string) config.ResponseObject {
 	return resp
 }
 
+// Gets a key
 func GetKey(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "get",
@@ -158,6 +162,7 @@ func GetKey(Config config.Config, args []string) config.ResponseObject {
 	return resp
 }
 
+// Deletes a key
 func DeleteKey(Config config.Config, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "delete",
@@ -202,4 +207,53 @@ func DeleteKey(Config config.Config, args []string) config.ResponseObject {
 		resp.Error = NotEnoughArgsMsg
 	}
 	return resp
+}
+
+// Information about the configuration including global version and modified time
+func Info(Config config.Config, args []string) config.ResponseObject {
+	resp := config.ResponseObject{
+		Action: "info",
+	}
+	discfgName := getDiscfgNameFromFile()
+	if len(args) > 0 {
+		discfgName = args[0]
+	}
+
+	if discfgName != "" {
+		// Just get the root key
+		success, storageResponse, err := storage.Get(Config, discfgName, "/")
+		if err != nil {
+			resp.Error = err.Error()
+		}
+		if success {
+			resp.Node = storageResponse
+			// Set the configuration version and modified time on the response
+			// Node.CfgVersion and Node.CfgModifiedNanoseconds are not included in the JSON output
+			resp.CfgVersion = resp.Node.CfgVersion
+			resp.CfgModified = 0
+			resp.CfgModifiedNanoseconds = resp.Node.CfgModifiedNanoseconds
+			if resp.Node.CfgModifiedNanoseconds > 0 {
+				resp.CfgModified = resp.Node.CfgModifiedNanoseconds / 1000000000
+			}
+			modified := time.Unix(resp.CfgModified, 0)
+			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
+
+			var buffer bytes.Buffer
+			buffer.WriteString(discfgName)
+			buffer.WriteString(" version ")
+			buffer.WriteString(strconv.FormatInt(resp.CfgVersion, 10))
+			buffer.WriteString(" last modified ")
+			buffer.WriteString(modified.Format(time.RFC1123))
+			resp.Message = buffer.String()
+			buffer.Reset()
+		}
+	} else {
+		resp.Error = NotEnoughArgsMsg
+	}
+	return resp
+}
+
+// Exports a discfg to file in JSON format
+func Export(Config config.Config, args []string) {
+	// TODO
 }

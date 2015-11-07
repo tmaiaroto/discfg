@@ -1,16 +1,15 @@
 package database
 
 import (
-	//"errors"
 	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
-	//"log"
 	"strconv"
-	//"encoding/json"
 	"strings"
+	"time"
+	// "log"
 )
 
 // Each shipper has a struct which implements the Shipper interface.
@@ -95,9 +94,9 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 // Updates a key in DynamoDB
 func (db DynamoDB) Update(cfg config.Config, name string, key string, value string) (bool, config.Node, error) {
 	var err error
-	var node config.Node
 	svc := Svc(cfg)
 	success := false
+	result := config.Node{Key: key}
 
 	// log.Println("Setting on table name: " + name)
 	// log.Println(key)
@@ -148,15 +147,11 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 			},
 		},
 		TableName: aws.String(name),
-		// TODO: This. If passed from the CLI, this needs to be checked.
-		// ConditionExpression: aws.String("ConditionExpression"),
-
 		// KEY and VALUE are reserved words so the query needs to dereference them
 		ExpressionAttributeNames: map[string]*string{
 			//"#k": aws.String("key"),
 			"#v": aws.String("value"),
 		},
-
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			// value (always a string)
 			":value": {
@@ -171,7 +166,6 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 				N: aws.String("1"),
 			},
 		},
-
 		//ReturnConsumedCapacity:      aws.String("TOTAL"),
 		//ReturnItemCollectionMetrics: aws.String("ReturnItemCollectionMetrics"),
 		ReturnValues:     aws.String("ALL_OLD"),
@@ -191,20 +185,19 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 
 	// The old values
 	if val, ok := response.Attributes["value"]; ok {
-		node.Value = val.B
-		node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
+		result.Value = val.B
+		result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 	}
 
-	return success, node, err
+	return success, result, err
 }
 
 // Gets a key in DynamoDB
 func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
-	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	result := config.Node{}
+	result := config.Node{Key: key}
 
 	params := &dynamodb.QueryInput{
 		TableName: aws.String(name),
@@ -236,12 +229,32 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		//fmt.Println(err.Error())
-		return success, node, err
+		return success, result, err
 	} else {
 		success = true
 		if len(response.Items) > 0 {
-			result.Value = response.Items[0]["value"].B
-			result.Version, _ = strconv.ParseInt(*response.Items[0]["version"].N, 10, 64)
+			// Every field should now be checked because it's possible to have a response without a value or verison.
+			// For example, the root key "/" may only hold information about the config version and modified time.
+			// It may not have a set value and therefore it also won't have a relative version either.
+			// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...
+			// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
+			// For now, just check the existence of keys in the map.
+			if val, ok := response.Items[0]["value"]; ok {
+				result.Value = val.B
+			}
+			if val, ok := response.Items[0]["version"]; ok {
+				result.Version, _ = strconv.ParseInt(*val.N, 10, 64)
+			}
+
+			// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
+			// This is only returned for the root key. no sense in making a separate get function because operations like
+			// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
+			if val, ok := response.Items[0]["cfgVersion"]; ok {
+				result.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
+			}
+			if val, ok := response.Items[0]["cfgModified"]; ok {
+				result.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
+			}
 		}
 	}
 
@@ -251,10 +264,9 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 // Deletes a key in DynamoDB
 func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, config.Node, error) {
 	var err error
-	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	result := config.Node{}
+	result := config.Node{Key: key}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -282,7 +294,7 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, con
 
 	response, err := svc.DeleteItem(params)
 	if err != nil {
-		return success, node, err
+		return success, result, err
 	} else {
 		success = true
 		if len(response.Attributes) > 0 {
@@ -292,4 +304,39 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, con
 	}
 
 	return success, result, err
+}
+
+// Updates the configuration's global version and modified timestamp (fields unique to the root key "/")
+func (db DynamoDB) UpdateConfigVersion(cfg config.Config, name string) bool {
+	svc := Svc(cfg)
+	success := false
+	now := time.Now()
+	params := &dynamodb.UpdateItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"key": {
+				S: aws.String("/"),
+			},
+		},
+		TableName: aws.String(name),
+		ExpressionAttributeNames: map[string]*string{
+			"#m": aws.String("cfgModified"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			// modified timestamp (DynamoDB has no date type)
+			":modified": {
+				N: aws.String(strconv.FormatInt(now.UnixNano(), 10)),
+			},
+			// version increment
+			":i": {
+				N: aws.String("1"),
+			},
+		},
+		ReturnValues:     aws.String("NONE"),
+		UpdateExpression: aws.String("SET #m = :modified ADD cfgVersion :i"),
+	}
+	_, err := svc.UpdateItem(params)
+	if err == nil {
+		success = true
+	}
+	return success
 }

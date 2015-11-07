@@ -86,6 +86,23 @@ var deleteCmd = &cobra.Command{
 		commands.Out(Config, resp)
 	},
 }
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "config information",
+	Long:  `Information about the config including version and modified time`,
+	Run: func(cmd *cobra.Command, args []string) {
+		resp := commands.Info(Config, args)
+		commands.Out(Config, resp)
+	},
+}
+var exportCmd = &cobra.Command{
+	Use:   "export",
+	Short: "export entire config",
+	Long:  `Exports the entire discfg to a file in JSON format`,
+	Run: func(cmd *cobra.Command, args []string) {
+		commands.Export(Config, args)
+	},
+}
 
 func main() {
 	// Set up commands
@@ -93,13 +110,15 @@ func main() {
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
 	// AWS Options & Credentials
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.Region, "region", "r", "us-east-1", "AWS Region to use")
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.Region, "region", "l", "us-east-1", "AWS Region to use")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 
-	// Additional pptions by some operations
+	// Additional options by some operations
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.ConditionalValue, "condition", "c", "", "Conditional operation value")
+	DiscfgCmd.PersistentFlags().BoolVarP(&Config.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
+	DiscfgCmd.PersistentFlags().IntVarP(&Config.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
 	DiscfgCmd.AddCommand(useCmd)
 	DiscfgCmd.AddCommand(whichCmd)
@@ -107,5 +126,6 @@ func main() {
 	DiscfgCmd.AddCommand(setCmd)
 	DiscfgCmd.AddCommand(getCmd)
 	DiscfgCmd.AddCommand(deleteCmd)
+	DiscfgCmd.AddCommand(infoCmd)
 	DiscfgCmd.Execute()
 }

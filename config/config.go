@@ -8,6 +8,8 @@ import (
 type Config struct {
 	CfgName              string
 	ConditionalValue     string
+	Recursive            bool
+	TTL                  int
 	StorageInterfaceName string
 	Storage              struct {
 		DynamoDB struct {
@@ -31,6 +33,14 @@ type ResponseObject struct {
 	CurrentDiscfg string `json:"currentDiscfg,omitempty"`
 	Error         string `json:"error,omitempty"`
 	Message       string `json:"message,omitempty"`
+	// Information about the config
+	CfgVersion int64 `json:"cfgVersion,omitempty"`
+	// In seconds since that's probably more common for people
+	CfgModified int64 `json:"cfgModified,omitempty"`
+	// In nanoseconds for the gophers like me who are snobby about time =)
+	CfgModifiedNanoseconds int64 `json:"cfgModifiedNanoseconds,omitempty"`
+	// A parsed date for humans to read
+	CfgModifiedParsed string `json:"cfgModifiedParsed,omitempty"`
 }
 
 // NOTES ON NODES:
@@ -71,8 +81,10 @@ type ResponseObject struct {
 // TODO: Content-Type?
 //
 type Node struct {
-	Version     int64           `json:"version,omitempty"`
-	Key         string          `json:"key,omitempty"`
-	Value       []byte          `json:"-"` //`json:"value,omitempty"`
-	OutputValue json.RawMessage `json:"value,omitempty"`
+	Version                int64           `json:"version,omitempty"`
+	Key                    string          `json:"key,omitempty"`
+	Value                  []byte          `json:"-"` //`json:"value,omitempty"`
+	OutputValue            json.RawMessage `json:"value,omitempty"`
+	CfgVersion             int64           `json:"-"`
+	CfgModifiedNanoseconds int64           `json:"-"`
 }

@@ -62,14 +62,6 @@ func Out(Config config.Config, resp config.ResponseObject) config.ResponseObject
 		if resp.Error != "" {
 			errorLabel(resp.Error)
 		}
-		// if resp.Success != "" {
-		// 	successLabel(resp.Success)
-		// }
-		// if resp.Message != "" {
-		// 	fmt.Print(resp.Message)
-		// 	fmt.Print("\n")
-		// }
-		// If the message is empty, show the value
 		if resp.Node.Value != nil {
 			// No need to put quote around it on the CLI for a human to read.
 			//o, _ := json.Marshal(&resp.Node.Value)

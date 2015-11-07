@@ -11,6 +11,8 @@ without the use of streams and triggers.
 
 Might be an interesting configurable option.
 
+UPDATE on this: Definitely going to use Kinesis streams. It's really going to make for an interesting feature.
+
 ## JSON Support
 
 DynamoDB is supposed to support JSON and querying into objects.    
@@ -21,6 +23,9 @@ because of size restrictions in DynamoDB. Though that was bumped up to 400kb app
 
 But then I go and read: http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DataFormat.html and it says JSON is a used as a transport
 protocol only.
+
+UPDATE on this: Now storing binary data for so many reasons. JSON can be stored and Go handles with json.RawMessage() when possible.
+However, there was no querying within the JSON.
 
 ## Snowflakes
 
@@ -36,3 +41,5 @@ the goals of the project.
 I love the idea of append only. I dislike updates. The cool thing is the query would sort by this RANGE key part and by limiting the results
 to just one, it would always return the latest. But at this point I don't want to think about things like expiring old items and making additional
 queries for conditional updates.
+
+UPDATE on this: I don't think this is worth the tradeoffs.

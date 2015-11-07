@@ -16,6 +16,7 @@ type Shipper interface {
 	Update(config.Config, string, string, string) (bool, config.Node, error)
 	Get(config.Config, string, string) (bool, config.Node, error)
 	Delete(config.Config, string, string) (bool, config.Node, error)
+	UpdateConfigVersion(config.Config, string) bool
 }
 
 // Standard shipper result contains errors and other information.
@@ -45,7 +46,9 @@ func Update(cfg config.Config, name string, key string, value string) (bool, con
 	var err error
 	var node config.Node
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
-		return s.Update(cfg, name, key, value)
+		if UpdateConfigVersion(cfg, name) {
+			return s.Update(cfg, name, key, value)
+		}
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
@@ -69,9 +72,22 @@ func Delete(cfg config.Config, name string, key string) (bool, config.Node, erro
 	var err error
 	var node config.Node
 	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
-		return s.Delete(cfg, name, key)
+		if UpdateConfigVersion(cfg, name) {
+			return s.Delete(cfg, name, key)
+		}
+
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}
 	return false, node, err
+}
+
+// Updates the global discfg config version and modified timestamp (on the root key "/")
+func UpdateConfigVersion(cfg config.Config, name string) bool {
+	// Technically, this modified timestamp won't be accurate. The config would have changed already by this point.
+	// TODO: Perhaps pass a timestamp to this function to get a little closer
+	if s, ok := shippers[cfg.StorageInterfaceName]; ok {
+		return s.UpdateConfigVersion(cfg, name)
+	}
+	return false
 }
