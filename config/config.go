@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	CfgName              string
+	ConditionalValue     string
 	StorageInterfaceName string
 	Storage              struct {
 		DynamoDB struct {

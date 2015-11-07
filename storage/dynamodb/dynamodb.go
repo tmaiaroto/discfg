@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/sdming/gosnow"
 	"github.com/tmaiaroto/discfg/config"
 	//"log"
 	"strconv"
@@ -16,16 +15,6 @@ import (
 
 // Each shipper has a struct which implements the Shipper interface.
 type DynamoDB struct {
-}
-
-// Generates a new Snowflake
-func generateId() int64 {
-	// TODO: return the error so we can do something. Maybe this function isn't even needed...
-	// Or maybe return it in the format dynamodb wants using aws package N: { aws.String() } ...
-	v, _ := gosnow.Default()
-	id, _ := v.Next()
-
-	return int64(id)
 }
 
 // Configures DynamoDB service to use
@@ -109,14 +98,10 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	//result := make(map[string]string)
 
 	// log.Println("Setting on table name: " + name)
 	// log.Println(key)
 	// log.Println(value)
-
-	//sid := generateId()
-	//sidStr := strconv.FormatInt(sid, 10)
 
 	keys := strings.Split(key, "/")
 	parents := []*string{}
@@ -175,8 +160,6 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			// value (always a string)
 			":value": {
-				//S: aws.String(value),
-				// Always store bytes?
 				B: []byte(value),
 			},
 			// parents
@@ -194,47 +177,20 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 		ReturnValues:     aws.String("ALL_OLD"),
 		UpdateExpression: aws.String("SET #v = :value, parents = :pv ADD version :i"),
 	}
+
+	// Conditional write operation (CAS)
+	if cfg.ConditionalValue != "" {
+		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(cfg.ConditionalValue)}
+		params.ConditionExpression = aws.String("#v = :condition")
+	}
+
 	response, err := svc.UpdateItem(params)
-
-	// params := &dynamodb.PutItemInput{
-	// 	Item: map[string]*dynamodb.AttributeValue{
-	// 		"id": {
-	// 			N: aws.String(sidStr),
-	// 		},
-	// 		"k": { // Required
-	// 			S: aws.String(key),
-	// 		},
-	// 		// String for now...I mean everything is coming in as a string through stdin. Which makes JSON attractive. Though I'd like to get a little fancier...
-	// 		// Things like dates. Though MongoDB manages just fine with that...And discfg is only querying by key. So there's no much need...But who knows.
-	// 		// I really dig that we can store binary data into DynamoDB too. That might be special.
-	// 		"v": {
-	// 			S: aws.String(value),
-	// 		},
-	// 		// The parent path(s)
-	// 		"parents": {
-	// 			SS: parents,
-	// 		},
-	// 	},
-	// 	TableName: aws.String(name), // Required
-	// 	// The following will return info...
-	// 	// Needs to be one of:  [INDEXES, TOTAL, NONE]
-	// 	// ReturnConsumedCapacity:      aws.String("ReturnConsumedCapacity"),
-
-	// 	// Needs to be one of: [SIZE, NONE]
-	// 	// ReturnItemCollectionMetrics: aws.String("ReturnItemCollectionMetrics"),
-
-	// 	// Needs to be one of the following strings: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]
-	// 	// ALL_OLD: Will return the previous value...because this PutItem will overwrite existing values.
-	// 	ReturnValues: aws.String("ALL_OLD"),
-	// }
-	// response, err := svc.PutItem(params)
 	if err == nil {
 		success = true
 	}
 
 	// The old values
 	if val, ok := response.Attributes["value"]; ok {
-		//result["value"] = *val.S
 		node.Value = val.B
 		node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 	}
@@ -248,12 +204,7 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	//result := make(map[string]string)
 	result := config.Node{}
-
-	// still not clear on what the difference between dynamodb.New() is and session.New()
-	// may only matter if there were multiple queries...we aren't going to have "sessions" ... it's just one command - one query.
-	//svc := dynamodb.New(session.New())
 
 	params := &dynamodb.QueryInput{
 		TableName: aws.String(name),
@@ -263,7 +214,7 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 			"#k": aws.String("key"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":key": { // Required
+			":key": {
 				S: aws.String(key),
 			},
 		},
@@ -289,8 +240,6 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 	} else {
 		success = true
 		if len(response.Items) > 0 {
-			// result["id"] = *response.Items[0]["id"].N
-			//result["value"] = *response.Items[0]["value"].S
 			result.Value = response.Items[0]["value"].B
 			result.Version, _ = strconv.ParseInt(*response.Items[0]["version"].N, 10, 64)
 		}
@@ -305,31 +254,38 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, con
 	var node config.Node
 	svc := Svc(cfg)
 	success := false
-	//result := make(map[string]string)
 	result := config.Node{}
 
 	params := &dynamodb.DeleteItemInput{
-		Key: map[string]*dynamodb.AttributeValue{ // Required
+		Key: map[string]*dynamodb.AttributeValue{
 			"key": {
 				S: aws.String(key),
 			},
 		},
 		TableName:    aws.String(name),
 		ReturnValues: aws.String("ALL_OLD"),
-		// TODO: allow an option to be passed for conditional delete (very nice feature to have)
-		// ConditionExpression: aws.String("ConditionExpression"),
-		//
 		// TODO: think about this for statistics
 		// INDEXES | TOTAL | NONE
 		//ReturnConsumedCapacity: aws.String("ReturnConsumedCapacity"),
 	}
+
+	// Conditional delete operation
+	if cfg.ConditionalValue != "" {
+		// Alias value since it's a reserved word
+		params.ExpressionAttributeNames = make(map[string]*string)
+		params.ExpressionAttributeNames["#v"] = aws.String("value")
+		// Set the condition expression value and compare
+		params.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
+		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(cfg.ConditionalValue)}
+		params.ConditionExpression = aws.String("#v = :condition")
+	}
+
 	response, err := svc.DeleteItem(params)
 	if err != nil {
 		return success, node, err
 	} else {
 		success = true
 		if len(response.Attributes) > 0 {
-			//result["value"] = *response.Attributes["value"].S
 			result.Value = response.Attributes["value"].B
 			result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 		}

@@ -17,7 +17,7 @@ var Config = config.Config{StorageInterfaceName: "dynamodb", Version: "0.1.0"}
 var DiscfgCmd = &cobra.Command{
 	Use:   "discfg",
 	Short: "discfg is a distributed configuration service",
-	Long:  `A distributed configuration service`,
+	Long:  `A distributed configuration service using Amazon Web Services.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Do Stuff Here
 	},
@@ -88,18 +88,19 @@ var deleteCmd = &cobra.Command{
 }
 
 func main() {
-	// Check config
-
 	// Set up commands
 	DiscfgCmd.AddCommand(versionCmd)
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
+	// AWS Options & Credentials
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.Region, "region", "r", "us-east-1", "AWS Region to use")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 
-	//DiscfgCmd.PersistentFlags().StringVarP(&Config.CfgName, "cfgName", "n", "cfg", "The configuration name (cfg)")
+	// Additional pptions by some operations
+	DiscfgCmd.PersistentFlags().StringVarP(&Config.ConditionalValue, "condition", "c", "", "Conditional operation value")
+
 	DiscfgCmd.AddCommand(useCmd)
 	DiscfgCmd.AddCommand(whichCmd)
 	DiscfgCmd.AddCommand(createCmd)
