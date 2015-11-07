@@ -114,11 +114,13 @@ func main() {
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Config.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "y", 1, "DynamoDB Table Read Capacity Units")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Config.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "z", 2, "DynamoDB Table Write Capacity Units")
 
 	// Additional options by some operations
 	DiscfgCmd.PersistentFlags().StringVarP(&Config.ConditionalValue, "condition", "c", "", "Conditional operation value")
 	DiscfgCmd.PersistentFlags().BoolVarP(&Config.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
-	DiscfgCmd.PersistentFlags().IntVarP(&Config.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Config.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
 	DiscfgCmd.AddCommand(useCmd)
 	DiscfgCmd.AddCommand(whichCmd)

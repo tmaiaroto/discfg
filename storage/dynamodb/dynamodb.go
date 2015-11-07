@@ -46,6 +46,16 @@ func Svc(cfg config.Config) *dynamodb.DynamoDB {
 func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, interface{}, error) {
 	svc := Svc(cfg)
 	success := false
+	wu := cfg.Storage.DynamoDB.WriteCapacityUnits
+	ru := cfg.Storage.DynamoDB.ReadCapacityUnits
+	// Must be at least 1
+	if wu < 1 {
+		wu = int64(1)
+	}
+	// Also must be at least 1, default to 2
+	if ru < 1 {
+		ru = int64(2)
+	}
 
 	params := &dynamodb.CreateTableInput{
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
@@ -75,8 +85,8 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 		// think about this...
 		// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ProvisionedThroughputIntro.html
 		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{ // Required
-			ReadCapacityUnits:  aws.Int64(2), // Required
-			WriteCapacityUnits: aws.Int64(1), // Required
+			ReadCapacityUnits:  aws.Int64(ru), // Required
+			WriteCapacityUnits: aws.Int64(wu), // Required
 		},
 		TableName: aws.String(tableName), // Required
 

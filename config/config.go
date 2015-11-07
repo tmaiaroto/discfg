@@ -9,14 +9,16 @@ type Config struct {
 	CfgName              string
 	ConditionalValue     string
 	Recursive            bool
-	TTL                  int
+	TTL                  int64
 	StorageInterfaceName string
 	Storage              struct {
 		DynamoDB struct {
-			Region          string
-			AccessKeyId     string
-			SecretAccessKey string
-			CredProfile     string
+			Region             string
+			AccessKeyId        string
+			SecretAccessKey    string
+			CredProfile        string
+			WriteCapacityUnits int64
+			ReadCapacityUnits  int64
 		}
 	}
 	Version      string
