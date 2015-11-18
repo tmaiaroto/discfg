@@ -17,13 +17,13 @@ type DynamoDB struct {
 }
 
 // Configures DynamoDB service to use
-func Svc(cfg config.Config) *dynamodb.DynamoDB {
-	awsConfig := &aws.Config{Region: aws.String(cfg.Storage.DynamoDB.Region)}
+func Svc(opts config.Options) *dynamodb.DynamoDB {
+	awsConfig := &aws.Config{Region: aws.String(opts.Storage.DynamoDB.Region)}
 	// Look in a variety of places for AWS credentials. First, try the credentials file set by AWS CLI tool.
 	// Note the empty string instructs to look under default file path (different based on OS).
 	// This file can have multiple profiles and a default profile will be used unless otherwise configured.
 	// See: https://godoc.org/github.com/aws/aws-sdk-go/aws/credentials#SharedCredentialsProvider
-	creds := credentials.NewSharedCredentials("", cfg.Storage.DynamoDB.CredProfile)
+	creds := credentials.NewSharedCredentials("", opts.Storage.DynamoDB.CredProfile)
 	_, err := creds.Get()
 	// If that failed, try environment variables.
 	if err != nil {
@@ -34,8 +34,8 @@ func Svc(cfg config.Config) *dynamodb.DynamoDB {
 	}
 
 	// If credentials were passed via config, then use those. They will take priority over other methods.
-	if cfg.Storage.DynamoDB.AccessKeyId != "" && cfg.Storage.DynamoDB.SecretAccessKey != "" {
-		creds = credentials.NewStaticCredentials(cfg.Storage.DynamoDB.AccessKeyId, cfg.Storage.DynamoDB.SecretAccessKey, "")
+	if opts.Storage.DynamoDB.AccessKeyId != "" && opts.Storage.DynamoDB.SecretAccessKey != "" {
+		creds = credentials.NewStaticCredentials(opts.Storage.DynamoDB.AccessKeyId, opts.Storage.DynamoDB.SecretAccessKey, "")
 	}
 	awsConfig.Credentials = creds
 
@@ -43,11 +43,11 @@ func Svc(cfg config.Config) *dynamodb.DynamoDB {
 }
 
 // Creates a new table for a configuration
-func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, interface{}, error) {
-	svc := Svc(cfg)
+func (db DynamoDB) CreateConfig(opts config.Options) (bool, interface{}, error) {
+	svc := Svc(opts)
 	success := false
-	wu := cfg.Storage.DynamoDB.WriteCapacityUnits
-	ru := cfg.Storage.DynamoDB.ReadCapacityUnits
+	wu := opts.Storage.DynamoDB.WriteCapacityUnits
+	ru := opts.Storage.DynamoDB.ReadCapacityUnits
 	// Must be at least 1
 	if wu < 1 {
 		wu = int64(1)
@@ -88,7 +88,7 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 			ReadCapacityUnits:  aws.Int64(ru), // Required
 			WriteCapacityUnits: aws.Int64(wu), // Required
 		},
-		TableName: aws.String(tableName), // Required
+		TableName: aws.String(opts.CfgName), // Required
 
 	}
 	response, err := svc.CreateTable(params)
@@ -102,17 +102,17 @@ func (db DynamoDB) CreateConfig(cfg config.Config, tableName string) (bool, inte
 }
 
 // Updates a key in DynamoDB
-func (db DynamoDB) Update(cfg config.Config, name string, key string, value string) (bool, config.Node, error) {
+func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	var err error
-	svc := Svc(cfg)
+	svc := Svc(opts)
 	success := false
-	result := config.Node{Key: key}
+	result := config.Node{Key: opts.Key}
 
 	// log.Println("Setting on table name: " + name)
-	// log.Println(key)
-	// log.Println(value)
+	// log.Println(opts.Key)
+	// log.Println(opts.Value)
 
-	keys := strings.Split(key, "/")
+	keys := strings.Split(opts.Key, "/")
 	parents := []*string{}
 	if len(keys) > 0 {
 		// Keep appending previous path so each parent key is an absolute path
@@ -120,7 +120,7 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 		var buffer bytes.Buffer
 		for i := range keys {
 			// Don't take an empty value or itself as a parent
-			if keys[i] != "" && keys[i] != key {
+			if keys[i] != "" && keys[i] != opts.Key {
 				buffer.WriteString(prevKey)
 				buffer.WriteString("/")
 				buffer.WriteString(keys[i])
@@ -153,19 +153,19 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	params := &dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"key": {
-				S: aws.String(key),
+				S: aws.String(opts.Key),
 			},
 		},
-		TableName: aws.String(name),
+		TableName: aws.String(opts.CfgName),
 		// KEY and VALUE are reserved words so the query needs to dereference them
 		ExpressionAttributeNames: map[string]*string{
 			//"#k": aws.String("key"),
 			"#v": aws.String("value"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			// value (always a string)
+			// value
 			":value": {
-				B: []byte(value),
+				B: []byte(opts.Value),
 			},
 			// parents
 			":pv": {
@@ -183,8 +183,8 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 	}
 
 	// Conditional write operation (CAS)
-	if cfg.ConditionalValue != "" {
-		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(cfg.ConditionalValue)}
+	if opts.ConditionalValue != "" {
+		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(opts.ConditionalValue)}
 		params.ConditionExpression = aws.String("#v = :condition")
 	}
 
@@ -203,14 +203,14 @@ func (db DynamoDB) Update(cfg config.Config, name string, key string, value stri
 }
 
 // Gets a key in DynamoDB
-func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config.Node, error) {
+func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 	var err error
-	svc := Svc(cfg)
+	svc := Svc(opts)
 	success := false
-	result := config.Node{Key: key}
+	result := config.Node{Key: opts.Key}
 
 	params := &dynamodb.QueryInput{
-		TableName: aws.String(name),
+		TableName: aws.String(opts.CfgName),
 
 		// KEY and VALUE are reserved words so the query needs to dereference them
 		ExpressionAttributeNames: map[string]*string{
@@ -218,7 +218,7 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":key": {
-				S: aws.String(key),
+				S: aws.String(opts.Key),
 			},
 		},
 		KeyConditionExpression: aws.String("#k = :key"),
@@ -272,19 +272,19 @@ func (db DynamoDB) Get(cfg config.Config, name string, key string) (bool, config
 }
 
 // Deletes a key in DynamoDB
-func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, config.Node, error) {
+func (db DynamoDB) Delete(opts config.Options) (bool, config.Node, error) {
 	var err error
-	svc := Svc(cfg)
+	svc := Svc(opts)
 	success := false
-	result := config.Node{Key: key}
+	result := config.Node{Key: opts.Key}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
 			"key": {
-				S: aws.String(key),
+				S: aws.String(opts.Key),
 			},
 		},
-		TableName:    aws.String(name),
+		TableName:    aws.String(opts.CfgName),
 		ReturnValues: aws.String("ALL_OLD"),
 		// TODO: think about this for statistics
 		// INDEXES | TOTAL | NONE
@@ -292,13 +292,13 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, con
 	}
 
 	// Conditional delete operation
-	if cfg.ConditionalValue != "" {
+	if opts.ConditionalValue != "" {
 		// Alias value since it's a reserved word
 		params.ExpressionAttributeNames = make(map[string]*string)
 		params.ExpressionAttributeNames["#v"] = aws.String("value")
 		// Set the condition expression value and compare
 		params.ExpressionAttributeValues = make(map[string]*dynamodb.AttributeValue)
-		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(cfg.ConditionalValue)}
+		params.ExpressionAttributeValues[":condition"] = &dynamodb.AttributeValue{B: []byte(opts.ConditionalValue)}
 		params.ConditionExpression = aws.String("#v = :condition")
 	}
 
@@ -317,8 +317,8 @@ func (db DynamoDB) Delete(cfg config.Config, name string, key string) (bool, con
 }
 
 // Updates the configuration's global version and modified timestamp (fields unique to the root key "/")
-func (db DynamoDB) UpdateConfigVersion(cfg config.Config, name string) bool {
-	svc := Svc(cfg)
+func (db DynamoDB) UpdateConfigVersion(opts config.Options) bool {
+	svc := Svc(opts)
 	success := false
 	now := time.Now()
 	params := &dynamodb.UpdateItemInput{
@@ -327,7 +327,7 @@ func (db DynamoDB) UpdateConfigVersion(cfg config.Config, name string) bool {
 				S: aws.String("/"),
 			},
 		},
-		TableName: aws.String(name),
+		TableName: aws.String(opts.CfgName),
 		ExpressionAttributeNames: map[string]*string{
 			"#m": aws.String("cfgModified"),
 		},

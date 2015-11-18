@@ -12,7 +12,7 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
-var Config = config.Config{StorageInterfaceName: "dynamodb", Version: "0.1.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.2.0"}
 
 var DiscfgCmd = &cobra.Command{
 	Use:   "discfg",
@@ -27,7 +27,7 @@ var versionCmd = &cobra.Command{
 	Short: "discfg version number",
 	Long:  `Displays the version number for discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("discfg v" + Config.Version)
+		fmt.Println("discfg v" + Options.Version)
 	},
 }
 
@@ -36,8 +36,8 @@ var useCmd = &cobra.Command{
 	Short: "use a specific discfg",
 	Long:  `For the current path, always use a specific discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.Use(Config, args)
-		commands.Out(Config, resp)
+		resp := commands.Use(Options)
+		commands.Out(Options, resp)
 	},
 }
 var whichCmd = &cobra.Command{
@@ -45,8 +45,8 @@ var whichCmd = &cobra.Command{
 	Short: "shows current discfg in use",
 	Long:  `Shows which discfg is currently selected for use at the current path`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.Which(Config, args)
-		commands.Out(Config, resp)
+		resp := commands.Which(Options)
+		commands.Out(Options, resp)
 	},
 }
 
@@ -55,8 +55,9 @@ var createCmd = &cobra.Command{
 	Short: "create config",
 	Long:  `Creates a new discfg distributed configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.CreateCfg(Config, args)
-		commands.Out(Config, resp)
+		setOptsFromArgs(args)
+		resp := commands.CreateCfg(Options)
+		commands.Out(Options, resp)
 	},
 }
 var setCmd = &cobra.Command{
@@ -64,8 +65,9 @@ var setCmd = &cobra.Command{
 	Short: "set key value",
 	Long:  `Sets a key value for a given discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.SetKey(Config, args)
-		commands.Out(Config, resp)
+		setOptsFromArgs(args)
+		resp := commands.SetKey(Options)
+		commands.Out(Options, resp)
 	},
 }
 var getCmd = &cobra.Command{
@@ -73,8 +75,9 @@ var getCmd = &cobra.Command{
 	Short: "get key value",
 	Long:  `Gets a key value for a given discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.GetKey(Config, args)
-		commands.Out(Config, resp)
+		setOptsFromArgs(args)
+		resp := commands.GetKey(Options)
+		commands.Out(Options, resp)
 	},
 }
 var deleteCmd = &cobra.Command{
@@ -82,8 +85,9 @@ var deleteCmd = &cobra.Command{
 	Short: "delete key",
 	Long:  `Deletes a key for a given discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.DeleteKey(Config, args)
-		commands.Out(Config, resp)
+		setOptsFromArgs(args)
+		resp := commands.DeleteKey(Options)
+		commands.Out(Options, resp)
 	},
 }
 var infoCmd = &cobra.Command{
@@ -91,8 +95,9 @@ var infoCmd = &cobra.Command{
 	Short: "config information",
 	Long:  `Information about the config including version and modified time`,
 	Run: func(cmd *cobra.Command, args []string) {
-		resp := commands.Info(Config, args)
-		commands.Out(Config, resp)
+		setOptsFromArgs(args)
+		resp := commands.Info(Options, args)
+		commands.Out(Options, resp)
 	},
 }
 var exportCmd = &cobra.Command{
@@ -100,27 +105,27 @@ var exportCmd = &cobra.Command{
 	Short: "export entire config",
 	Long:  `Exports the entire discfg to a file in JSON format`,
 	Run: func(cmd *cobra.Command, args []string) {
-		commands.Export(Config, args)
+		commands.Export(Options, args)
 	},
 }
 
 func main() {
 	// Set up commands
 	DiscfgCmd.AddCommand(versionCmd)
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
 	// AWS Options & Credentials
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.Region, "region", "l", "us-east-1", "AWS Region to use")
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
-	DiscfgCmd.PersistentFlags().Int64VarP(&Config.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "y", 1, "DynamoDB Table Read Capacity Units")
-	DiscfgCmd.PersistentFlags().Int64VarP(&Config.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "z", 2, "DynamoDB Table Write Capacity Units")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.Region, "region", "l", "us-east-1", "AWS Region to use")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "y", 1, "DynamoDB Table Read Capacity Units")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "z", 2, "DynamoDB Table Write Capacity Units")
 
 	// Additional options by some operations
-	DiscfgCmd.PersistentFlags().StringVarP(&Config.ConditionalValue, "condition", "c", "", "Conditional operation value")
-	DiscfgCmd.PersistentFlags().BoolVarP(&Config.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
-	DiscfgCmd.PersistentFlags().Int64VarP(&Config.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.ConditionalValue, "condition", "c", "", "Conditional operation value")
+	DiscfgCmd.PersistentFlags().BoolVarP(&Options.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
+	DiscfgCmd.PersistentFlags().Int64VarP(&Options.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
 	DiscfgCmd.AddCommand(useCmd)
 	DiscfgCmd.AddCommand(whichCmd)
@@ -130,4 +135,26 @@ func main() {
 	DiscfgCmd.AddCommand(deleteCmd)
 	DiscfgCmd.AddCommand(infoCmd)
 	DiscfgCmd.Execute()
+}
+
+// Takes positional command arguments and sets options from them (because some may be optional)
+func setOptsFromArgs(args []string) {
+	// The user may have set a config name in a `.discfg` file, for convenience, to shorten the commands.
+	name := commands.GetDiscfgNameFromFile()
+	Options.CfgName = name
+
+	switch len(args) {
+	case 1:
+		Options.Key = args[0]
+		break
+	case 2:
+		Options.Key = args[0]
+		Options.Value = args[1]
+		break
+	case 3:
+		Options.CfgName = args[0]
+		Options.Key = args[1]
+		Options.Value = args[2]
+		break
+	}
 }

@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-var Config = config.Config{StorageInterfaceName: "dynamodb", Version: "0.1.0"}
+var Config = config.Options{StorageInterfaceName: "dynamodb", Version: "0.2.0"}
 
 func main() {
 	var testFlag = flag.Bool("test", false, "run a test command")

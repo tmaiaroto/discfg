@@ -18,7 +18,7 @@ const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usa
 const DiscfgFileName = ".discfg"
 
 // Output
-func Out(Config config.Config, resp config.ResponseObject) config.ResponseObject {
+func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject {
 	// We've stored everything as binary data. But that can be many things.
 	// A string, a number, or even JSON. We can check to see if it's something we can marshal to JSON.
 	// If that fails, then we'll just return it as a string in the JSON response under the "value" key.
@@ -45,7 +45,7 @@ func Out(Config config.Config, resp config.ResponseObject) config.ResponseObject
 		resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
 	}
 
-	switch Config.OutputFormat {
+	switch opts.OutputFormat {
 	case "json":
 		o, _ := json.Marshal(&resp)
 		// TODO: Benchmark this - is it faster?
@@ -96,7 +96,7 @@ func successLabel(message string) {
 }
 
 // Just returns the name of the set discfg name (TODO: will need to change as .discfg gets more complex).
-func getDiscfgNameFromFile() string {
+func GetDiscfgNameFromFile() string {
 	name := ""
 	currentCfg, err := ioutil.ReadFile(DiscfgFileName)
 	if err == nil {

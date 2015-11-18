@@ -12,12 +12,12 @@ import (
 )
 
 // Creates a new configuration
-func CreateCfg(Config config.Config, args []string) config.ResponseObject {
+func CreateCfg(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "create",
 	}
-	if len(args) > 0 {
-		success, _, err := storage.CreateConfig(Config, args[0])
+	if len(opts.CfgName) > 0 {
+		success, _, err := storage.CreateConfig(opts)
 		if err != nil {
 			resp.Error = err.Error()
 		}
@@ -33,18 +33,18 @@ func CreateCfg(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
-func Use(Config config.Config, args []string) config.ResponseObject {
+func Use(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "use",
 	}
-	if len(args) > 0 {
-		cc := []byte(args[0])
+	if len(opts.CfgName) > 0 {
+		cc := []byte(opts.CfgName)
 		err := ioutil.WriteFile(".discfg", cc, 0644)
 		if err != nil {
 			resp.Error = err.Error()
 		} else {
-			resp.Message = "Set current working discfg to " + args[0]
-			resp.CurrentDiscfg = args[0]
+			resp.Message = "Set current working discfg to " + opts.CfgName
+			resp.CurrentDiscfg = opts.CfgName
 		}
 	} else {
 		resp.Error = NotEnoughArgsMsg
@@ -53,11 +53,11 @@ func Use(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Shows which discfg configuration is currently active for use
-func Which(Config config.Config, args []string) config.ResponseObject {
+func Which(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "which",
 	}
-	currentCfg := getDiscfgNameFromFile()
+	currentCfg := GetDiscfgNameFromFile()
 	if currentCfg == "" {
 		resp.Error = "No current working configuration has been set at this path."
 	} else {
@@ -68,42 +68,22 @@ func Which(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Sets a key value for a given configuration
-func SetKey(Config config.Config, args []string) config.ResponseObject {
+func SetKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "set",
 	}
-	// TODO: refactor
-	var discfgName string
-	var key string
-	var value string
-	enoughArgs := false
-	if len(args) > 1 {
-		currentName := getDiscfgNameFromFile()
-		if len(args) == 2 && currentName != "" {
-			discfgName = currentName
-			key = args[0]
-			value = args[1]
-			enoughArgs = true
-		} else {
-			if len(args) == 3 {
-				discfgName = args[0]
-				key = args[1]
-				value = args[2]
-				enoughArgs = true
-			}
-		}
-	}
 
-	key, keyErr := formatKeyName(key)
-	if enoughArgs && keyErr == nil {
-		success, storageResponse, err := storage.Update(Config, discfgName, key, value)
+	key, keyErr := formatKeyName(opts.Key)
+	if keyErr == nil {
+		opts.Key = key
+		success, storageResponse, err := storage.Update(opts)
 		if err != nil {
 			resp.Error = "Error updating key value"
 			resp.Message = err.Error()
 		}
 		if success {
 			resp.Node.Key = key
-			resp.Node.Value = []byte(value)
+			resp.Node.Value = []byte(opts.Value)
 			resp.Node.Version = 1
 
 			// Only set PrevNode if there was a previous value
@@ -124,32 +104,14 @@ func SetKey(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Gets a key
-func GetKey(Config config.Config, args []string) config.ResponseObject {
+func GetKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "get",
 	}
-	// TODO: refactor
-	var discfgName string
-	var key string
-	enoughArgs := false
-	if len(args) > 0 {
-		currentName := getDiscfgNameFromFile()
-		if len(args) == 1 && currentName != "" {
-			discfgName = currentName
-			key = args[0]
-			enoughArgs = true
-		} else {
-			if len(args) == 2 {
-				discfgName = args[0]
-				key = args[1]
-				enoughArgs = true
-			}
-		}
-	}
-
-	key, keyErr := formatKeyName(key)
-	if enoughArgs && keyErr == nil {
-		success, storageResponse, err := storage.Get(Config, discfgName, key)
+	key, keyErr := formatKeyName(opts.Key)
+	if keyErr == nil {
+		opts.Key = key
+		success, storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
 		}
@@ -163,42 +125,24 @@ func GetKey(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Deletes a key
-func DeleteKey(Config config.Config, args []string) config.ResponseObject {
+func DeleteKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "delete",
 	}
-	// TODO: refactor
-	var discfgName string
-	var key string
-	enoughArgs := false
-	if len(args) > 0 {
-		currentName := getDiscfgNameFromFile()
-		if len(args) == 1 && currentName != "" {
-			discfgName = currentName
-			key = args[0]
-			enoughArgs = true
-		} else {
-			if len(args) == 2 {
-				discfgName = args[0]
-				key = args[1]
-				enoughArgs = true
-			}
-		}
-	}
-
-	key, keyErr := formatKeyName(key)
-	if enoughArgs && keyErr == nil {
-		success, storageResponse, err := storage.Delete(Config, discfgName, key)
+	key, keyErr := formatKeyName(opts.Key)
+	if keyErr == nil {
+		opts.Key = key
+		success, storageResponse, err := storage.Delete(opts)
 		if err != nil {
 			resp.Error = "Error getting key value"
 			resp.Message = err.Error()
 		}
 		if success {
 			resp.Node = storageResponse
-			resp.Node.Key = key
+			resp.Node.Key = opts.Key
 			resp.Node.Value = nil
 			resp.Node.Version = storageResponse.Version + 1
-			resp.PrevNode.Key = key
+			resp.PrevNode.Key = opts.Key
 			resp.PrevNode.Version = storageResponse.Version
 			resp.PrevNode.Value = storageResponse.Value
 			// log.Println(storageResponse)
@@ -210,18 +154,15 @@ func DeleteKey(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Information about the configuration including global version and modified time
-func Info(Config config.Config, args []string) config.ResponseObject {
+func Info(opts config.Options, args []string) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "info",
 	}
-	discfgName := getDiscfgNameFromFile()
-	if len(args) > 0 {
-		discfgName = args[0]
-	}
 
-	if discfgName != "" {
+	if opts.CfgName != "" {
 		// Just get the root key
-		success, storageResponse, err := storage.Get(Config, discfgName, "/")
+		opts.Key = "/"
+		success, storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
 		}
@@ -239,7 +180,7 @@ func Info(Config config.Config, args []string) config.ResponseObject {
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
 
 			var buffer bytes.Buffer
-			buffer.WriteString(discfgName)
+			buffer.WriteString(opts.CfgName)
 			buffer.WriteString(" version ")
 			buffer.WriteString(strconv.FormatInt(resp.CfgVersion, 10))
 			buffer.WriteString(" last modified ")
@@ -254,6 +195,6 @@ func Info(Config config.Config, args []string) config.ResponseObject {
 }
 
 // Exports a discfg to file in JSON format
-func Export(Config config.Config, args []string) {
+func Export(opts config.Options, args []string) {
 	// TODO
 }

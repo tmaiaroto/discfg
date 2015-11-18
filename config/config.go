@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 )
 
-type Config struct {
+// All of the configuration options needed by various functions (set by CLI commands, config files, other code, etc.)
+type Options struct {
 	CfgName              string
 	ConditionalValue     string
 	Recursive            bool
+	Key                  string
+	Value                string
 	TTL                  int64
 	StorageInterfaceName string
 	Storage              struct {
@@ -87,6 +90,7 @@ type Node struct {
 	Key                    string          `json:"key,omitempty"`
 	Value                  []byte          `json:"-"` //`json:"value,omitempty"`
 	OutputValue            json.RawMessage `json:"value,omitempty"`
+	Nodes                  []Node          `json:"nodes,omitepty"`
 	CfgVersion             int64           `json:"-"`
 	CfgModifiedNanoseconds int64           `json:"-"`
 }
