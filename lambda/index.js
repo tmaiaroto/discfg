@@ -60,6 +60,11 @@ exports.handler = function(event, context) {
 	// always output to current context's done
 	done = context.done.bind(context);
 
+	// NOTE: AWS Credentials are present in environment variables. I'm unsure if they are also available to the Go process or not...
+	// I assume so. If not, they can always be sent in the JSON data to the Go process.
+	// var AWS = require('aws-sdk');
+	// var creds = new AWS.EnvironmentCredentials('AWS');
+	
 	go_proc.stdin.write(JSON.stringify({
 		"event": event,
 		"context": context

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
 	"strconv"
@@ -39,7 +40,7 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 	}
 	awsConfig.Credentials = creds
 
-	return dynamodb.New(awsConfig)
+	return dynamodb.New(session.New(awsConfig))
 }
 
 // Creates a new table for a configuration
