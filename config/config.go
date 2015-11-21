@@ -3,6 +3,7 @@ package config
 
 import (
 	"encoding/json"
+	"time"
 )
 
 // All of the configuration options needed by various functions (set by CLI commands, config files, other code, etc.)
@@ -90,6 +91,9 @@ type Node struct {
 	Key                    string          `json:"key,omitempty"`
 	Value                  []byte          `json:"-"` //`json:"value,omitempty"`
 	OutputValue            json.RawMessage `json:"value,omitempty"`
+	TTL                    int64           `json:"ttl,omitempty"`
+	Expiration             time.Time       `json:"-"`
+	OutputExpiration       string          `json:"expiration,omitempty"`
 	Nodes                  []Node          `json:"nodes,omitepty"`
 	CfgVersion             int64           `json:"-"`
 	CfgModifiedNanoseconds int64           `json:"-"`

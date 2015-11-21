@@ -12,6 +12,7 @@ import (
 	ct "github.com/daviddengcn/go-colortext"
 	"github.com/tmaiaroto/discfg/config"
 	"io/ioutil"
+	"time"
 )
 
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
@@ -37,12 +38,18 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 		resp.Node.OutputValue = json.RawMessage(resp.Node.Value)
 	}
 
-	// Same for th PrevNode if set
+	// Same for the PrevNode if set
 	if resp.PrevNode.Value != nil {
 		if !isJSON(string(resp.PrevNode.Value)) {
 			resp.PrevNode.Value = []byte(strconv.Quote(string(resp.PrevNode.Value)))
 		}
 		resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
+	}
+
+	// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
+	// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
+	if resp.Node.TTL > 0 {
+		resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
 	}
 
 	switch opts.OutputFormat {

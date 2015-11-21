@@ -131,6 +131,14 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 			}
 		}
 	}
+	ttlString := strconv.FormatInt(opts.TTL, 10)
+	expires := time.Now().Add(time.Duration(opts.TTL) * time.Second)
+	expiresInt := expires.UnixNano()
+	expiresString := strconv.FormatInt(expiresInt, 10)
+	// If no TTL was passed in the options, set 0. Anything 0 is indefinite in these cases.
+	if opts.TTL == 0 {
+		expiresString = "0"
+	}
 
 	// TODO: Fix - the panic is when there are no child. parents slice has issues.
 	// TODO: JSON seems to be saving...but check output formatting (unescaping, parsing - when possible)
@@ -162,6 +170,8 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 		ExpressionAttributeNames: map[string]*string{
 			//"#k": aws.String("key"),
 			"#v": aws.String("value"),
+			// If TTL is a reserved word in DynamoDB...Then why doesn't it seem to have a TTL feature??
+			"#t": aws.String("ttl"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			// value
@@ -172,6 +182,14 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 			":pv": {
 				SS: parents,
 			},
+			// TTL
+			":ttl": {
+				N: aws.String(ttlString),
+			},
+			// Expiration timestamp
+			":expires": {
+				N: aws.String(expiresString),
+			},
 			// version increment
 			":i": {
 				N: aws.String("1"),
@@ -180,7 +198,7 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 		//ReturnConsumedCapacity:      aws.String("TOTAL"),
 		//ReturnItemCollectionMetrics: aws.String("ReturnItemCollectionMetrics"),
 		ReturnValues:     aws.String("ALL_OLD"),
-		UpdateExpression: aws.String("SET #v = :value, parents = :pv ADD version :i"),
+		UpdateExpression: aws.String("SET #v = :value, parents = :pv, #t = :ttl, expires = :expires ADD version :i"),
 	}
 
 	// Conditional write operation (CAS)
@@ -242,8 +260,8 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 		//fmt.Println(err.Error())
 		return success, result, err
 	} else {
-		success = true
 		if len(response.Items) > 0 {
+			success = true
 			// Every field should now be checked because it's possible to have a response without a value or verison.
 			// For example, the root key "/" may only hold information about the config version and modified time.
 			// It may not have a set value and therefore it also won't have a relative version either.
@@ -257,6 +275,20 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 				result.Version, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
 
+			// Expiration/TTL (only set if > 0)
+			if val, ok := response.Items[0]["ttl"]; ok {
+				ttl, _ := strconv.ParseInt(*val.N, 10, 64)
+				if ttl > 0 {
+					result.TTL = ttl
+				}
+			}
+			if val, ok := response.Items[0]["expires"]; ok {
+				expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
+				if expiresNano > 0 {
+					result.Expiration = time.Unix(0, expiresNano)
+				}
+			}
+
 			// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
 			// This is only returned for the root key. no sense in making a separate get function because operations like
 			// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
@@ -266,6 +298,19 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 			if val, ok := response.Items[0]["cfgModified"]; ok {
 				result.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
+		}
+	}
+
+	// Check the TTL
+	if result.TTL > 0 {
+		// If expired, return an empty result
+		if result.Expiration.UnixNano() < time.Now().UnixNano() {
+			result = config.Node{Key: opts.Key}
+			success = false
+			// Delete the now expired item
+			// NOTE: This does mean waiting on another DynamoDB request and that technically means slower performance in these situations, but is it a conern?
+			// A goroutine doesn't help because there's not guarantee there's time for it to complete.
+			db.Delete(opts)
 		}
 	}
 
