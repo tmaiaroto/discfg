@@ -138,7 +138,8 @@ I think the biggest benefits you gain is cost and ease of use. Without a doubt.
 
 To run etcd you need (ok, you don't need, but should have) multiple servers to form a quorum and those servers 
 run 24/7. This comes with a cost. The thing about discfg is that it can run using AWS Lambda, API Gateway, and 
-DynamoDB. All services that carry a low cost pay as you go model. This makes discfg far cheaper to run.
+DynamoDB. All services that carry a low cost pay as you go model. This makes discfg far cheaper to run and faster
+to setup.
 
 Both are easy to use with a RESTful interface, but AWS adds some extra features for free. There's a few 
 convenient features magically taken care of jsut by using AWS. Security, rate limiting, auto-scaling, 
