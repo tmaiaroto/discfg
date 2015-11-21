@@ -1,10 +1,8 @@
 # Distributed Config (discfg)
 
-**NOTE** This is very early on and experimental. I would not use this for anything in production!
-I'm just trying to get a proof of concept and organize my thoughts. I will start versioning this
-and will note when I think it's something safe to play with. I will note when it is suitable
-for production. PLEASE leave any feedback or issues in issues. Just keep in mind I probably
-know of the obvious issues =) That doesn't mean they shoudln't be in there though. So flag away.
+**NOTE** This project is under active development and is not considered production ready.
+It's simple enough that it might work for you in production...But there could be breaking
+changes in new versions, etc. The current goal is to research and get feedback.
 
 ------
 
@@ -78,8 +76,8 @@ This of course means that some control is given up...But there are good things i
 When building _applications_ or services, configuration and state become a challenge. Especially 
 in a distributed environment or when working with others.
 
-This tool will use Amazon DynamoDB to hold the configuration (for now). Though it was designed to 
-be able to use other storage engines in the future.
+This tool will use Amazon DynamoDB to hold the configuration, but it was designed to be able to use 
+other storage engines in the future.
 
 Lambda with API Gateway can be used to work with the configuration (GET, PUT, DELETE) so it feels 
 more like etcd. However, discfg can be used from the command line or you can run your own REST API
@@ -90,8 +88,8 @@ server(s) as well. Or any combination of those interfaces.
 Three main motivating factors behind making yet another distributed configuration service:
 
 1. Cost. Using DynamoDB (and Lambda to access discfg through a REST API) is incredibly cost effective. 
-There is no server in this situation so it is always cheaper than using something like etcd. Usually 
-significantly so.
+There is no server in this situation so it is almost always cheaper than using something like etcd. 
+Usually significantly so.
 
 2. Convenience and simplicity. Leveragnig AWS Services makes things easy. The original intent was 
 for working with Lambda and API Gateway, microservice, based applications. If you're not an AWS fan,
@@ -107,7 +105,7 @@ You could revoke the AWS IAM at any time. You could make it read only. Then all 
 is retrieve the confg, cache it locally (for efficiency...or not) and you're done.
 
 Need to update your application config? You can literally do it from your own machine's command line and 
-have your applications reflect that change in real-time.
+have your applications reflect that change in real-time. Configuration management is a breeze.
 
 ## Differences Between etcd and discfg (where discfg is weaker)
 
