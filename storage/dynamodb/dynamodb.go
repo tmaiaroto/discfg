@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
 	"strconv"
-	"strings"
 	"time"
 	// "log"
 )
@@ -113,31 +112,6 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	// log.Println(opts.Key)
 	// log.Println(opts.Value)
 
-	// The parent is always the root to begin with (can't seem to store an empty string so even for the root key this will be set).
-	parent := "/"
-
-	keys := strings.Split(opts.Key, "/")
-	// parents := []*string{}
-	// if len(keys) > 0 {
-	// 	// Keep appending previous path so each parent key is an absolute path
-	// 	prevKey := ""
-	// 	var buffer bytes.Buffer
-	// 	for i := range keys {
-	// 		// Don't take an empty value or itself as a parent
-	// 		if keys[i] != "" && keys[i] != opts.Key {
-	// 			buffer.WriteString(prevKey)
-	// 			buffer.WriteString("/")
-	// 			buffer.WriteString(keys[i])
-	// 			prevKey = buffer.String()
-	// 			parents = append(parents, aws.String(prevKey))
-	// 			buffer.Reset()
-	// 		}
-	// 	}
-	// }
-	// If there are two or more keys, the last one will be the direct parent.
-	if len(keys) > 1 {
-		parent = strings.Join(keys[:len(keys)-1], "/")
-	}
 	ttlString := strconv.FormatInt(opts.TTL, 10)
 	expires := time.Now().Add(time.Duration(opts.TTL) * time.Second)
 	expiresInt := expires.UnixNano()
@@ -147,10 +121,7 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 		expiresString = "0"
 	}
 
-	// TODO: Fix - the panic is when there are no child. parents slice has issues.
-	// TODO: JSON seems to be saving...but check output formatting (unescaping, parsing - when possible)
 	//log.Println(value)
-
 	// DynamoDB type cheat sheet:
 	// B: []byte("some bytes")
 	// BOOL: aws.Bool(true)
@@ -185,11 +156,6 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 			":value": {
 				B: []byte(opts.Value),
 			},
-			// parents
-			":pv": {
-				// SS: parents, // was storing a set of strings, but only the direct parent is needed. in fact, it's better for querying.
-				S: aws.String(parent),
-			},
 			// TTL
 			":ttl": {
 				N: aws.String(ttlString),
@@ -206,7 +172,7 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 		//ReturnConsumedCapacity:      aws.String("TOTAL"),
 		//ReturnItemCollectionMetrics: aws.String("ReturnItemCollectionMetrics"),
 		ReturnValues:     aws.String("ALL_OLD"),
-		UpdateExpression: aws.String("SET #v = :value, parent = :pv, #t = :ttl, expires = :expires ADD version :i"),
+		UpdateExpression: aws.String("SET #v = :value, #t = :ttl, expires = :expires ADD version :i"),
 	}
 
 	// Conditional write operation (CAS)

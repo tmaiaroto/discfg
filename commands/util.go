@@ -2,7 +2,6 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -122,21 +121,12 @@ func substr(s string, pos, length int) string {
 	return string(runes[pos:l])
 }
 
-// Checks and formats the key name. Ensures it beings with a "/" and that it's valid, if not it an empty string is returned (which won't be used).
+// Checks and formats the key name.
 func formatKeyName(key string) (string, error) {
 	var err error
 	k := ""
 	if len(key) > 0 {
-		// If the key does not begin with a slash, prepend one.
-		if substr(key, 0, 1) != "/" {
-			var buffer bytes.Buffer
-			buffer.WriteString("/")
-			buffer.WriteString(key)
-			k = buffer.String()
-			buffer.Reset()
-		} else {
-			k = key
-		}
+		k = key
 	} else {
 		return "", errors.New("Missing key name")
 	}
@@ -148,6 +138,9 @@ func formatKeyName(key string) (string, error) {
 	}
 
 	// Remove any trailing slashes (unless there's only one, the root).
+	// NOTE: A tree structure is not yet supported. The user can define one, but there are no recursive features when getting/deleting.
+	// This may come in a future version, for now the structure is flat. However, convention set by other tools (along with REST API endpoints)
+	// makes using slashes a natural fit and discfg will assume they are being used. It could be thought of as a namespace.
 	if len(k) > 1 {
 		for k[len(k)-1:] == "/" {
 			k = k[:len(k)-1]
