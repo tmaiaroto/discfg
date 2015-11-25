@@ -124,7 +124,8 @@ func main() {
 
 	// Additional options by some operations
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.ConditionalValue, "condition", "c", "", "Conditional operation value")
-	DiscfgCmd.PersistentFlags().BoolVarP(&Options.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
+	// TODO: In a future version
+	// DiscfgCmd.PersistentFlags().BoolVarP(&Options.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
 	DiscfgCmd.PersistentFlags().Int64VarP(&Options.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
 	DiscfgCmd.AddCommand(useCmd)

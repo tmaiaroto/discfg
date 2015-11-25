@@ -121,6 +121,11 @@ keep a simple version counter on both the entire configuration and each key.
 Fortunately, DynamoDB has conditional operations so it is not possible to make updates or delete out of 
 order when using this feature. It helps with those race condition scenarios.
 
+Currently there is no support for a tree structure. It's completely possible to use keys with slashes 
+and imply a hiearchy, but there is no recursive functionality right now. DynamoDB doesn't lend itself
+well to this task given a few limits. However, there are some ways to go about it and it should be 
+available in a future version.
+
 Since Lambdas can't run forever, there is no reasonable way to listen for changes. So there is no feature
 for long polling to listen for change and there is no history kept (there's an alternative for this though).
 
