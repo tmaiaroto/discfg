@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
+	"os"
 	"strconv"
 	"time"
 	// "log"
@@ -19,6 +20,12 @@ type DynamoDB struct {
 // Configures DynamoDB service to use
 func Svc(opts config.Options) *dynamodb.DynamoDB {
 	awsConfig := &aws.Config{Region: aws.String(opts.Storage.DynamoDB.Region)}
+
+	// If a session was passed... (AWS Lambda does this)
+	if opts.Storage.DynamoDB.SessionToken != "" {
+		os.Setenv("AWS_SESSION_TOKEN", opts.Storage.DynamoDB.SessionToken)
+	}
+
 	// Look in a variety of places for AWS credentials. First, try the credentials file set by AWS CLI tool.
 	// Note the empty string instructs to look under default file path (different based on OS).
 	// This file can have multiple profiles and a default profile will be used unless otherwise configured.

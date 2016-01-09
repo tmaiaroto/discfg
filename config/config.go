@@ -16,17 +16,20 @@ type Options struct {
 	TTL                  int64
 	StorageInterfaceName string
 	Storage              struct {
-		DynamoDB struct {
-			Region             string
-			AccessKeyId        string
-			SecretAccessKey    string
-			CredProfile        string
-			WriteCapacityUnits int64
-			ReadCapacityUnits  int64
-		}
+		DynamoDB
 	}
 	Version      string
 	OutputFormat string
+}
+
+type DynamoDB struct {
+	Region             string
+	AccessKeyId        string
+	SecretAccessKey    string
+	SessionToken       string
+	CredProfile        string
+	WriteCapacityUnits int64
+	ReadCapacityUnits  int64
 }
 
 // The response for output.
@@ -89,7 +92,7 @@ type ResponseObject struct {
 type Node struct {
 	Version                int64           `json:"version,omitempty"`
 	Key                    string          `json:"key,omitempty"`
-	Value                  []byte          `json:"-"` //`json:"value,omitempty"`
+	Value                  []byte          `json:"-"` // `json:"value,omitempty"`
 	OutputValue            json.RawMessage `json:"value,omitempty"`
 	TTL                    int64           `json:"ttl,omitempty"`
 	Expiration             time.Time       `json:"-"`

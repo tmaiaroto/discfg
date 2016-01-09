@@ -29,7 +29,7 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 		if !isJSON(string(resp.Node.Value)) {
 			// Return base64 when not JSON?
 			// b64Str := base64.StdEncoding.EncodeToString(resp.Node.Value)
-			//resp.Node..Value = []byte(strconv.Quote(b64Str))
+			//resp.Node.Value = []byte(strconv.Quote(b64Str))
 			resp.Node.Value = []byte(strconv.Quote(string(resp.Node.Value)))
 		}
 		// The output value is always raw JSON. It is not stored in the data store.

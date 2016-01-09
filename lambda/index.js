@@ -1,6 +1,7 @@
 
 const MAX_FAILS = 4;
 
+var AWS = require('aws-sdk');
 var child_process = require('child_process'),
 	go_proc = null,
 	done = console.log.bind(console),
@@ -48,7 +49,7 @@ var child_process = require('child_process'),
 		}
 		// check for newline ascii char 10
 		if (data.length && data[data.length-1] == 10) {
-			var output = JSON.parse(data.toString('UTF-8'));
+			var output = JSON.parse(data); // already a string from discfg //JSON.parse(data.toString('UTF-8'));
 			data = null;
 			done(null, output);
 		};
@@ -64,7 +65,8 @@ exports.handler = function(event, context) {
 	// I assume so. If not, they can always be sent in the JSON data to the Go process.
 	// var AWS = require('aws-sdk');
 	// var creds = new AWS.EnvironmentCredentials('AWS');
-	
+	event.creds = new AWS.EnvironmentCredentials('AWS');
+
 	go_proc.stdin.write(JSON.stringify({
 		"event": event,
 		"context": context
