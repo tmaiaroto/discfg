@@ -6,7 +6,8 @@ feedback. The goals of this project are constantly changing and while I first co
 contrasted it with etcd, it's quickly departing from the same feature set.
 
 discfg is being created for a very simple reason. Shared application configuration and state 
-within AWS services.
+within AWS services. The expectation is that you're developing some distributed application. 
+Perhaps a series of micro/services.
 
 In the future, maybe it will have the ability to run independent of AWS. However, the first
 cut of this will heavily rely upon AWS. This is for convenience and cost. The drawback is 
