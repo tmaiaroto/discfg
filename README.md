@@ -1,8 +1,18 @@
 # Distributed Config (discfg)
 
 **NOTE** This project is under active development and is not considered production ready.
-It's simple enough that it might work for you in production...But there could be breaking
-changes in new versions, etc. The current goal is to research and get feedback.
+In fact, under no circumstances should you use this in production. However, I always appreciate
+feedback. The goals of this project are constantly changing and while I first compared and 
+contrasted it with etcd, it's quickly departing from the same feature set.
+
+discfg is being created for a very simple reason. Shared application configuration and state 
+within AWS services.
+
+In the future, maybe it will have the ability to run independent of AWS. However, the first
+cut of this will heavily rely upon AWS. This is for convenience and cost. The drawback is 
+speed and consistency. Solutions like etcd will ultimately be faster and better geared for
+systems level needs. discfg is looking more toward applications.
+
 
 ------
 
