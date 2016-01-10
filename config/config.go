@@ -2,7 +2,7 @@
 package config
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"time"
 )
 
@@ -12,7 +12,7 @@ type Options struct {
 	ConditionalValue     string
 	Recursive            bool
 	Key                  string
-	Value                string
+	Value                []byte
 	TTL                  int64
 	StorageInterfaceName string
 	Storage              struct {
@@ -88,16 +88,25 @@ type ResponseObject struct {
 // Again, this highlights discfg's source of inspriation (etcd) and difference from it.
 //
 // TODO: Content-Type?
-//
+// Value will be an interface{}, but stored as []byte in DynamoDB.
+// Other storage engines may convert to something else.
+// For now, all data is coming in as string. Either from the terminal or a RESTful API.
 type Node struct {
-	Version                int64           `json:"version,omitempty"`
-	Key                    string          `json:"key,omitempty"`
-	Value                  []byte          `json:"-"` // `json:"value,omitempty"`
-	OutputValue            json.RawMessage `json:"value,omitempty"`
-	TTL                    int64           `json:"ttl,omitempty"`
-	Expiration             time.Time       `json:"-"`
-	OutputExpiration       string          `json:"expiration,omitempty"`
-	Nodes                  []Node          `json:"nodes,omitepty"`
-	CfgVersion             int64           `json:"-"`
-	CfgModifiedNanoseconds int64           `json:"-"`
+	Version int64  `json:"version,omitempty"`
+	Key     string `json:"key,omitempty"`
+	//Value   []byte `json:"value,omitempty"`
+	Value interface{} `json:"value,omitempty"`
+	//OutputValue            json.RawMessage `json:"value,omitempty"`
+
+	// perfect for json, not good if some other value was stored
+	//OutputValue            map[string]interface{} `json:"value,omitempty"`
+	// We really need interface{} for any type of data. []byte above is for DynamoDB specifically.
+	// It could be ... yea. an interface{} too. converted to []byte for storing in dynamodb.
+	//OutputValue            interface{} `json:"value,omitempty"`
+	TTL                    int64     `json:"ttl,omitempty"`
+	Expiration             time.Time `json:"-"`
+	OutputExpiration       string    `json:"expiration,omitempty"`
+	Nodes                  []Node    `json:"nodes,omitepty"`
+	CfgVersion             int64     `json:"-"`
+	CfgModifiedNanoseconds int64     `json:"-"`
 }

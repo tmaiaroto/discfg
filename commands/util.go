@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
+	//"strconv"
 	//"github.com/pquerna/ffjson/ffjson"
 	ct "github.com/daviddengcn/go-colortext"
 	"github.com/tmaiaroto/discfg/config"
@@ -25,25 +25,30 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 	//
 	// If it isn't JSON, then return a base64 string.
 	// TODO: Add Content-Type field of some sort so there's some context?
-	if resp.Node.Value != nil {
-		if !isJSON(string(resp.Node.Value)) {
-			// Return base64 when not JSON?
-			// b64Str := base64.StdEncoding.EncodeToString(resp.Node.Value)
-			//resp.Node.Value = []byte(strconv.Quote(b64Str))
-			resp.Node.Value = []byte(strconv.Quote(string(resp.Node.Value)))
-		}
-		// The output value is always raw JSON. It is not stored in the data store.
-		// It's simply for display.
-		resp.Node.OutputValue = json.RawMessage(resp.Node.Value)
-	}
+	//
+	// TODO: Stuff like this will now be handled by an output interface.
+	// ...and will also handle the content-type situation.
+	// Output JSON, output Msgpack, output Protobuf? output whatever Content-Type.
+	//
+	// if resp.Node.Value != nil {
+	// 	if !isJSON(string(resp.Node.Value)) {
+	// 		// Return base64 when not JSON?
+	// 		// b64Str := base64.StdEncoding.EncodeToString(resp.Node.Value)
+	// 		//resp.Node.Value = []byte(strconv.Quote(b64Str))
+	// 		resp.Node.Value = []byte(strconv.Quote(string(resp.Node.Value)))
+	// 	}
+	// 	// The output value is always raw JSON. It is not stored in the data store.
+	// 	// It's simply for display.
+	// 	resp.Node.OutputValue = json.RawMessage(resp.Node.Value)
+	// }
 
-	// Same for the PrevNode if set
-	if resp.PrevNode.Value != nil {
-		if !isJSON(string(resp.PrevNode.Value)) {
-			resp.PrevNode.Value = []byte(strconv.Quote(string(resp.PrevNode.Value)))
-		}
-		resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
-	}
+	// // Same for the PrevNode if set
+	// if resp.PrevNode.Value != nil {
+	// 	if !isJSON(string(resp.PrevNode.Value)) {
+	// 		resp.PrevNode.Value = []byte(strconv.Quote(string(resp.PrevNode.Value)))
+	// 	}
+	// 	resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
+	// }
 
 	// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 	// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
@@ -72,7 +77,9 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 			// No need to put quote around it on the CLI for a human to read.
 			//o, _ := json.Marshal(&resp.Node.Value)
 			//fmt.Print(string(o))
-			fmt.Print(string(resp.Node.Value))
+
+			//fmt.Print(string(resp.Node.Value))
+			fmt.Print(resp.Node.Value)
 			// v, _ := strconv.Unquote(string(resp.Node.Value))
 			// fmt.Print(v)
 			fmt.Print("\n")

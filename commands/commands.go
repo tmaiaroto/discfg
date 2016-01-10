@@ -83,7 +83,7 @@ func SetKey(opts config.Options) config.ResponseObject {
 		}
 		if success {
 			resp.Node.Key = key
-			resp.Node.Value = []byte(opts.Value)
+			resp.Node.Value = opts.Value //[]byte(opts.Value)
 			resp.Node.Version = 1
 
 			// Only set PrevNode if there was a previous value

@@ -1,16 +1,17 @@
 package database
 
 import (
-	//"bytes"
+	"bytes"
+	"encoding/gob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
+	// "log"
 	"os"
 	"strconv"
 	"time"
-	// "log"
 )
 
 // Each shipper has a struct which implements the Shipper interface.
@@ -161,7 +162,8 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			// value
 			":value": {
-				B: []byte(opts.Value),
+				//B: []byte(opts.Value), // <-- sure, if all we ever stored as strings.
+				B: opts.Value,
 			},
 			// TTL
 			":ttl": {
@@ -416,4 +418,16 @@ func (db DynamoDB) UpdateConfigVersion(opts config.Options) bool {
 		success = true
 	}
 	return success
+}
+
+// Prepares data to be stored in DynamoDb as byte array. interface{} -> []byte
+// DEPRECATED
+func getBytes(v interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(v)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
