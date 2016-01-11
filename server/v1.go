@@ -115,9 +115,7 @@ func v1SetKey(c *echo.Context) error {
 func v1DeleteKey(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
 	Options.Key = c.Param("key")
-	resp := commands.DeleteKey(Options)
-
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, commands.DeleteKey(Options))
 }
 
 func v1CreateCfg(c *echo.Context) error {
