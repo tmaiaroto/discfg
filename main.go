@@ -150,12 +150,12 @@ func setOptsFromArgs(args []string) {
 		break
 	case 2:
 		Options.Key = args[0]
-		Options.Value = args[1]
+		Options.Value = []byte(args[1])
 		break
 	case 3:
 		Options.CfgName = args[0]
 		Options.Key = args[1]
-		Options.Value = args[2]
+		Options.Value = []byte(args[2])
 		break
 	}
 }

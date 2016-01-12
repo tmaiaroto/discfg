@@ -74,15 +74,8 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 			errorLabel(resp.Error)
 		}
 		if resp.Node.Value != nil {
-			// No need to put quote around it on the CLI for a human to read.
-			//o, _ := json.Marshal(&resp.Node.Value)
-			//fmt.Print(string(o))
-
-			//fmt.Print(string(resp.Node.Value))
-			fmt.Print(resp.Node.Value)
-			// v, _ := strconv.Unquote(string(resp.Node.Value))
-			// fmt.Print(v)
-			fmt.Print("\n")
+			// The value should be a byte array, for th CLI we want a string.
+			fmt.Println(string(resp.Node.Value.([]byte)))
 		} else {
 			if resp.Message != "" {
 				fmt.Println(resp.Message)

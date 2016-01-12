@@ -13,6 +13,7 @@ import (
 // who knows what will happen in the future. A simple interface never hurts.
 type Shipper interface {
 	CreateConfig(config.Options) (bool, interface{}, error)
+	DeleteConfig(config.Options) (bool, interface{}, error)
 	Update(config.Options) (bool, config.Node, error)
 	Get(config.Options) (bool, config.Node, error)
 	Delete(config.Options) (bool, config.Node, error)
@@ -35,6 +36,16 @@ func CreateConfig(opts config.Options) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.CreateConfig(opts)
+	} else {
+		err = errors.New("Invalid shipper adapter.")
+	}
+	return false, nil, err
+}
+
+func DeleteConfig(opts config.Options) (bool, interface{}, error) {
+	var err error
+	if s, ok := shippers[opts.StorageInterfaceName]; ok {
+		return s.DeleteConfig(opts)
 	} else {
 		err = errors.New("Invalid shipper adapter.")
 	}

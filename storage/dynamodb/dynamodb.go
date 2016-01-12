@@ -109,6 +109,22 @@ func (db DynamoDB) CreateConfig(opts config.Options) (bool, interface{}, error) 
 	return success, response, err
 }
 
+// Deletes a configuration (removing the DynamoDB table and all data within it)
+func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) {
+	svc := Svc(opts)
+	success := false
+
+	params := &dynamodb.DeleteTableInput{
+		TableName: aws.String(opts.CfgName), // Required
+	}
+	response, err := svc.DeleteTable(params)
+	if err == nil {
+		success = true
+	}
+
+	return success, response, err
+}
+
 // Updates a key in DynamoDB
 func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	var err error
