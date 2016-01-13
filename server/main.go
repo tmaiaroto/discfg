@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.2.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.3.0"}
 
 func main() {
 	// TODO: remove

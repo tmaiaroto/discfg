@@ -15,7 +15,7 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.2.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.3.0"}
 
 var DataFile = ""
 

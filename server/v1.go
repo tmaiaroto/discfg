@@ -9,18 +9,19 @@ import (
 	"github.com/tmaiaroto/discfg/config"
 	//"github.com/ugorji/go/codec" // <-- may eventually be used as a different output format. have to see what echo supports.
 	//"log"
-	"net/http"
-	//	"strconv"
 	"io/ioutil"
+	"net/http"
+	"strconv"
 )
 
 // Set the routes for V1 API
 func v1Routes(e *echo.Echo) {
-	e.Put("/v1/:name/keys/:key", v1SetKey)
-	e.Get("/v1/:name/keys/:key", v1GetKey)
-	e.Delete("/v1/:name/keys/:key", v1DeleteKey)
+	e.Put("/v1/:name/key/:key", v1SetKey)
+	e.Get("/v1/:name/key/:key", v1GetKey)
+	e.Delete("/v1/:name/key/:key", v1DeleteKey)
 
-	e.Put("/v1/create/:name", v1CreateCfg)
+	e.Put("/v1/cfg/:name", v1CreateCfg)
+	e.Delete("/v1/cfg/:name", v1DeleteCfg)
 }
 
 // Gets a key from discfg
@@ -118,7 +119,26 @@ func v1DeleteKey(c *echo.Context) error {
 	return c.JSON(http.StatusOK, commands.DeleteKey(Options))
 }
 
+// Creates a new configuration
 func v1CreateCfg(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
+
+	// Optionally set write capacity units (for DynamoDB, defaults to 1)
+	wu, err := strconv.ParseInt(c.Query("writeUnits"), 10, 64)
+	if err == nil {
+		Options.Storage.WriteCapacityUnits = wu
+	}
+	// Optionally set read capacity units (for DynamoDB, defaults to 2)
+	ru, err := strconv.ParseInt(c.Query("readUnits"), 10, 64)
+	if err == nil {
+		Options.Storage.ReadCapacityUnits = ru
+	}
+
 	return c.JSON(http.StatusOK, commands.CreateCfg(Options))
+}
+
+// Deletes a configuration
+func v1DeleteCfg(c *echo.Context) error {
+	Options.CfgName = c.Param("name")
+	return c.JSON(http.StatusOK, commands.DeleteCfg(Options))
 }
