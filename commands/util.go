@@ -14,7 +14,9 @@ import (
 	"time"
 )
 
+// TODO: Change this and use config/status.go instead
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
+const ValueRequired = "A value is required. Run 'discfg help' for usage."
 const DiscfgFileName = ".discfg"
 
 // Output

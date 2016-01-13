@@ -93,6 +93,11 @@ func SetKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "set",
 	}
+	// Do not allow empty values to be set
+	if opts.Value == nil {
+		resp.Error = ValueRequired
+		return resp
+	}
 
 	key, keyErr := formatKeyName(opts.Key)
 	if keyErr == nil {
