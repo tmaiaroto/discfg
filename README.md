@@ -29,7 +29,8 @@ because you've used the AWS CLI tool before and configured them...
 ```
 ./discfg create mycfg    
 ./discfg use mycfg    
-./discfg set /mykey '{"json": "works"}'    
+./discfg set mykey '{"json": "works"}'    
+./discfg set mykey -d file.json
 ```
 
 That should create a configuration for you (a table in DynamoDB - US East region by default). 
@@ -40,20 +41,20 @@ you can always get and set keys by passing the configuration name. So the follow
 the same as the one above:
 
 ```
-./discfg set mycfg /mykey '{"json": "works"}'
+./discfg set mycfg mykey '{"json": "works"}'
 ```
 
 Also note that the slash is optional. All keys without a forward slash will have one prepended automatically. 
 That is to say they will be at the root level. Now to retrieve this value:
 
 ```
-./discfg get /mykey
+./discfg get mykey
 ```
 
 To retrieve the value as a JSON response run (and jq is handy here; https://stedolan.github.io/jq):
 
 ```
-./discfg get /mykey -f json
+./discfg get mykey -f json
 ```
 
 You should see something like this:
