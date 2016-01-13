@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
+	"os"
 	"time"
 )
 
@@ -31,11 +33,21 @@ var versionCmd = &cobra.Command{
 	},
 }
 
+var cfgCmd = &cobra.Command{
+	Use:   "cfg",
+	Short: "manage discfg configurations",
+	Long:  `Creates and deletes discfg configurations`,
+	Run: func(cmd *cobra.Command, args []string) {
+	},
+}
 var useCmd = &cobra.Command{
 	Use:   "use",
 	Short: "use a specific discfg",
 	Long:  `For the current path, always use a specific discfg`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			Options.CfgName = args[0]
+		}
 		resp := commands.Use(Options)
 		commands.Out(Options, resp)
 	},
@@ -49,17 +61,39 @@ var whichCmd = &cobra.Command{
 		commands.Out(Options, resp)
 	},
 }
-
-var createCmd = &cobra.Command{
+var createCfgCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create config",
 	Long:  `Creates a new discfg distributed configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
-		setOptsFromArgs(args)
+		if len(args) > 0 {
+			Options.CfgName = args[0]
+		}
 		resp := commands.CreateCfg(Options)
 		commands.Out(Options, resp)
 	},
 }
+var deleteCfgCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "delete config",
+	Long:  `Deletes a discfg distributed configuration`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			Options.CfgName = args[0]
+			// Confirmation
+			inputReader := bufio.NewReader(os.Stdin)
+			cfgCmd.Print("Are you sure? [Y/n] ")
+			input, _ := inputReader.ReadString('\n')
+			if input != "Y\n" {
+				DiscfgCmd.Println("Aborted")
+				return
+			}
+		}
+		resp := commands.DeleteCfg(Options)
+		commands.Out(Options, resp)
+	},
+}
+
 var setCmd = &cobra.Command{
 	Use:   "set",
 	Short: "set key value",
@@ -114,27 +148,25 @@ func main() {
 	DiscfgCmd.AddCommand(versionCmd)
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
-	// AWS Options & Credentials
+	// AWS options & credentials
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.Region, "region", "l", "us-east-1", "AWS Region to use")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
-	DiscfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "y", 1, "DynamoDB Table Read Capacity Units")
-	DiscfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "z", 2, "DynamoDB Table Write Capacity Units")
+
+	// cfgCmd spcific options
+	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "r", 1, "DynamoDB Table Read Capacity Units")
+	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "w", 2, "DynamoDB Table Write Capacity Units")
 
 	// Additional options by some operations
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.ConditionalValue, "condition", "c", "", "Conditional operation value")
-	// TODO: In a future version
-	// DiscfgCmd.PersistentFlags().BoolVarP(&Options.Recursive, "recursive", "r", false, "Recursively return or delete child keys")
 	DiscfgCmd.PersistentFlags().Int64VarP(&Options.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
-	DiscfgCmd.AddCommand(useCmd)
-	DiscfgCmd.AddCommand(whichCmd)
-	DiscfgCmd.AddCommand(createCmd)
-	DiscfgCmd.AddCommand(setCmd)
-	DiscfgCmd.AddCommand(getCmd)
-	DiscfgCmd.AddCommand(deleteCmd)
-	DiscfgCmd.AddCommand(infoCmd)
+	DiscfgCmd.AddCommand(cfgCmd, setCmd, getCmd, deleteCmd, infoCmd)
+	cfgCmd.AddCommand(useCmd)
+	cfgCmd.AddCommand(whichCmd)
+	cfgCmd.AddCommand(createCfgCmd)
+	cfgCmd.AddCommand(deleteCfgCmd)
 	DiscfgCmd.Execute()
 }
 

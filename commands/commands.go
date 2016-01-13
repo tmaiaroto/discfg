@@ -32,6 +32,27 @@ func CreateCfg(opts config.Options) config.ResponseObject {
 	return resp
 }
 
+// Deletes a configuration
+func DeleteCfg(opts config.Options) config.ResponseObject {
+	resp := config.ResponseObject{
+		Action: "delete",
+	}
+	if len(opts.CfgName) > 0 {
+		success, _, err := storage.DeleteConfig(opts)
+		if err != nil {
+			resp.Error = err.Error()
+		}
+		if success {
+			resp.Message = "Successfully deleted the configuration"
+		}
+	} else {
+		resp.Error = NotEnoughArgsMsg
+		// TODO: Error code for this, message may not be necessary - is it worthwhile to try and figure out exactly which arguments were missing?
+		// Maybe a future thing to do. I need to git er done right now.
+	}
+	return resp
+}
+
 // Sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
 func Use(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
