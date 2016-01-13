@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
+	"io/ioutil"
 	"os"
 	"time"
 )
@@ -15,6 +16,8 @@ var _ time.Duration
 var _ bytes.Buffer
 
 var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.2.0"}
+
+var DataFile = ""
 
 var DiscfgCmd = &cobra.Command{
 	Use:   "discfg",
@@ -159,6 +162,7 @@ func main() {
 	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "w", 2, "DynamoDB Table Write Capacity Units")
 
 	// Additional options by some operations
+	DiscfgCmd.PersistentFlags().StringVarP(&DataFile, "data", "d", "", "Data file to read for value")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.ConditionalValue, "condition", "c", "", "Conditional operation value")
 	DiscfgCmd.PersistentFlags().Int64VarP(&Options.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
@@ -189,5 +193,14 @@ func setOptsFromArgs(args []string) {
 		Options.Key = args[1]
 		Options.Value = []byte(args[2])
 		break
+	}
+
+	// A data file will overwrite Options.Value, even if set. Prefer the data file (if it can be read)
+	// if both a value command line argument and a file path are specified.
+	if DataFile != "" {
+		b, err := ioutil.ReadFile(DataFile)
+		if err == nil {
+			Options.Value = b
+		}
 	}
 }

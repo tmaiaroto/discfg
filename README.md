@@ -111,5 +111,5 @@ other storage engines in the future (such as S3).
 
 Lambda with API Gateway can be used to work with the configuration (GET, PUT, DELETE) so it feels 
 more like etcd. However, discfg can be used from the command line or you can run your own REST API
-server(s) as well. Or any combination of those interfaces. You could even import parts of the 
-package into your own Go application.
+server(s) as well. Or any combination of those interfaces. You could even import the package into 
+your own Go application.
