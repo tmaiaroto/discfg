@@ -22,6 +22,7 @@ func v1Routes(e *echo.Echo) {
 
 	e.Put("/v1/cfg/:name", v1CreateCfg)
 	e.Delete("/v1/cfg/:name", v1DeleteCfg)
+	e.Options("/v1/cfg/:name", v1OptionsCfg)
 }
 
 // Gets a key from discfg
@@ -141,4 +142,26 @@ func v1CreateCfg(c *echo.Context) error {
 func v1DeleteCfg(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
 	return c.JSON(http.StatusOK, commands.DeleteCfg(Options))
+}
+
+// Gets/sets options for a configuration
+func v1OptionsCfg(c *echo.Context) error {
+	Options.CfgName = c.Param("name")
+	// If nothing that would change a configuration's options/settings are passed,
+	// then return commands.Info() ... Otherwise, call a new commands.UpdateInfo() function...
+	// That then adjusts settings and returns Info() anyway.
+	// Or maybe commands.Info() can be a getter and setter...Eh... maybe.
+	//
+	// OR. Make another route and handler for adjusting configuration settings using PUT.
+	// https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html ...says OPTIONS can contain
+	// some data in the body request, though defines no use for it. So it's up in the air.
+	//
+	// It might then also be neat to hav an OPTIONS for other routes.
+	// These responses would all be handled here and be just for self-documenting the API.
+	// OPTIONS request on a key path for example would return information about how to
+	// update or delete that specific key. On /v1/:name/key it might then just be
+	// instructions for creating a key.
+	//
+	// Need to think this over. Sleep on it.
+	return c.JSON(http.StatusOK, commands.Info(Options, []string{}))
 }
