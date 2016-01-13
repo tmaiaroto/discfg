@@ -35,8 +35,8 @@ because you've used the AWS CLI tool before and configured them...
 
 That first command creates a configuration for you (a table in DynamoDB - US East region by default). 
 After that you can set keys from values passed to the CLI or from a file on disk. All values ultimately 
-get stored as binary data, so you could even store (small - DynamoDB size limits) images in there if 
-you really wanted to.
+get stored as binary data, so you could even store (small - DynamoDB size limits) files if you really 
+wanted to; images, maybe icons, for example.
 
 Note: If you did not want to call the ```use``` command or if you need to work with multiple configurations,
 you can always get and set keys by passing the configuration name. So the following ```set``` command is
