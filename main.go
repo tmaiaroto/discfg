@@ -199,6 +199,7 @@ func main() {
 	cfgCmd.AddCommand(createCfgCmd)
 	cfgCmd.AddCommand(deleteCfgCmd)
 	cfgCmd.AddCommand(updateCfgCmd)
+	cfgCmd.AddCommand(infoCmd)
 	DiscfgCmd.Execute()
 }
 
