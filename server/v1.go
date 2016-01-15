@@ -163,5 +163,25 @@ func v1OptionsCfg(c *echo.Context) error {
 	// instructions for creating a key.
 	//
 	// Need to think this over. Sleep on it.
-	return c.JSON(http.StatusOK, commands.Info(Options, []string{}))
+	// YES. All of it. OPTIONS all the things!
+	//
+	// There will only be so many options that can be changed after creation.
+	// For example, if we wanted to gzip the data ... That couldn't be turned on/off after creation.
+	// Doing so would mean all existing values would need to change.
+	// Though for gzip, I think it might be a nice additional value on the record that specifies the data is gzipped.
+	// So it can be done on a key by key basis. So if it was sent gzipped, then when it is read there'll be a simple
+	// if/then that unzips. So users can decide how the data is stored. ... Think about that too. I'm not sure they
+	// should care or have to say on each key. It likely should just be done always. Or on a per configuration basis.
+	// So again, that kinda stuff must be set up front upon creation and can not change.
+	//
+	// So the options being set here are going to be quite limited.
+	// Though I don't want to handle them all here... EAch adapter should.
+	//
+	// So take a map of options. map[string]interface{}
+	// Then pass that to each storage adapter. Then each adapter can figure out and choose which things to use/set.
+	// Which means the gzip setting, and any other setting that can't be changed after creation, is simply ignored
+	// at that point even if passed.
+	//
+	//
+	return c.JSON(http.StatusOK, commands.Info(Options, map[string]interface{}{}))
 }

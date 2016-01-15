@@ -179,8 +179,10 @@ func DeleteKey(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Information about the configuration including global version and modified time
-func Info(opts config.Options, args []string) config.ResponseObject {
+// Information about the configuration including global version/state and modified time.
+// Also, information about the underlying storage engine and it's settings. If settings are
+// passed, they will be updated by each storage adapter as needed.
+func Info(opts config.Options, settings map[string]interface{}) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "info",
 	}
@@ -188,19 +190,36 @@ func Info(opts config.Options, args []string) config.ResponseObject {
 	if opts.CfgName != "" {
 		// Just get the root key
 		opts.Key = "/"
+
+		// TODO: Refactor. Pull this out into its own function.
+		// The original thinking was based around an HTTP OPTIONS request.
+		// If data in the body, update. Either way, return a JSON response with the info and storage settings.
+		// It doesn't make sense for the CLI and the API can call two functions. So...Just pull this out.
+		//
+		// If settings were passed
+		// Note: For some storage engines, such as DynamoDB, it could take a while for changes to be reflected.
+		if len(settings) > 0 {
+			_, _, updateErr := storage.UpdateConfig(opts, settings)
+			if updateErr != nil {
+				resp.Error = updateErr.Error()
+				return resp
+			}
+		}
+
 		success, storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
 		}
 		if success {
-			resp.Node = storageResponse
+			// Debating putting the node value on here...
+			// resp.Node = storageResponse
 			// Set the configuration version and modified time on the response
 			// Node.CfgVersion and Node.CfgModifiedNanoseconds are not included in the JSON output
-			resp.CfgVersion = resp.Node.CfgVersion
+			resp.CfgVersion = storageResponse.CfgVersion
 			resp.CfgModified = 0
-			resp.CfgModifiedNanoseconds = resp.Node.CfgModifiedNanoseconds
+			resp.CfgModifiedNanoseconds = storageResponse.CfgModifiedNanoseconds
 			if resp.Node.CfgModifiedNanoseconds > 0 {
-				resp.CfgModified = resp.Node.CfgModifiedNanoseconds / 1000000000
+				resp.CfgModified = storageResponse.CfgModifiedNanoseconds / 1000000000
 			}
 			modified := time.Unix(resp.CfgModified, 0)
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)

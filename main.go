@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/commands"
@@ -133,7 +134,32 @@ var infoCmd = &cobra.Command{
 	Long:  `Information about the config including version and modified time`,
 	Run: func(cmd *cobra.Command, args []string) {
 		setOptsFromArgs(args)
-		resp := commands.Info(Options, args)
+		resp := commands.Info(Options, map[string]interface{}{})
+		commands.Out(Options, resp)
+	},
+}
+var updateCfgCmd = &cobra.Command{
+	Use:   "update",
+	Short: "update config storage settings",
+	Long:  `Adjusts options for a config's storage engine`,
+	Run: func(cmd *cobra.Command, args []string) {
+		name := commands.GetDiscfgNameFromFile()
+		Options.CfgName = name
+		var settings map[string]interface{}
+
+		switch len(args) {
+		case 1:
+			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
+				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
+			}
+			break
+		case 2:
+			Options.CfgName = args[0]
+			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
+				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
+			}
+		}
+		resp := commands.Info(Options, settings)
 		commands.Out(Options, resp)
 	},
 }
@@ -158,6 +184,7 @@ func main() {
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 
 	// cfgCmd spcific options
+	// (soon to be ditched in favor of passing a JSON string for settings - since we can't account for all options across all storage engines)
 	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "r", 1, "DynamoDB Table Read Capacity Units")
 	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "w", 2, "DynamoDB Table Write Capacity Units")
 
@@ -171,6 +198,7 @@ func main() {
 	cfgCmd.AddCommand(whichCmd)
 	cfgCmd.AddCommand(createCfgCmd)
 	cfgCmd.AddCommand(deleteCfgCmd)
+	cfgCmd.AddCommand(updateCfgCmd)
 	DiscfgCmd.Execute()
 }
 

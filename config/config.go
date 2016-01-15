@@ -15,13 +15,16 @@ type Options struct {
 	Value                []byte
 	TTL                  int64
 	StorageInterfaceName string
-	Storage              struct {
+	// TODO: This probably shouldn't be here. Not like this. Maybe an interface{}
+	Storage struct {
 		DynamoDB
 	}
 	Version      string
 	OutputFormat string
 }
 
+// TODO: Same as above. This kind of stuff should probably be in each interface.
+// In fact a simple map[string]interface{} should suffice for storage options.
 type DynamoDB struct {
 	Region             string
 	AccessKeyId        string
@@ -103,10 +106,12 @@ type Node struct {
 	// We really need interface{} for any type of data. []byte above is for DynamoDB specifically.
 	// It could be ... yea. an interface{} too. converted to []byte for storing in dynamodb.
 	//OutputValue            interface{} `json:"value,omitempty"`
-	TTL                    int64     `json:"ttl,omitempty"`
-	Expiration             time.Time `json:"-"`
-	OutputExpiration       string    `json:"expiration,omitempty"`
-	Nodes                  []Node    `json:"nodes,omitepty"`
-	CfgVersion             int64     `json:"-"`
-	CfgModifiedNanoseconds int64     `json:"-"`
+	TTL              int64     `json:"ttl,omitempty"`
+	Expiration       time.Time `json:"-"`
+	OutputExpiration string    `json:"expiration,omitempty"`
+	// For now, skip this. The original thinking was to have a tree like directory structure like etcd.
+	// Though discfg has now deviated away from that to a flat key/value structure.
+	// Nodes                  []Node    `json:"nodes,omitepty"`
+	CfgVersion             int64 `json:"-"`
+	CfgModifiedNanoseconds int64 `json:"-"`
 }

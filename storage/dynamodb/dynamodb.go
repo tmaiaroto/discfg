@@ -125,6 +125,49 @@ func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) 
 	return success, response, err
 }
 
+// Updates a configuration (DyanmoDB can have its read and write capacity units adjusted as needed)
+// Note: Adjusting the read capacity is fast, adjusting write capacity takes longer.
+func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
+	svc := Svc(opts)
+	success := false
+	wu := opts.Storage.DynamoDB.WriteCapacityUnits
+	ru := opts.Storage.DynamoDB.ReadCapacityUnits
+	// New settings to override the old.
+	if val, ok := settings["WriteCapacityUnits"]; ok {
+		wu = int64(val.(float64))
+	}
+	if val, ok := settings["ReadCapacityUnits"]; ok {
+		ru = int64(val.(float64))
+	}
+	// Must be at least 1
+	if wu < 1 {
+		wu = int64(1)
+	}
+	// Also must be at least 1, default to 2
+	if ru < 1 {
+		ru = int64(2)
+	}
+
+	params := &dynamodb.UpdateTableInput{
+		TableName: aws.String(opts.CfgName), // Required
+		ProvisionedThroughput: &dynamodb.ProvisionedThroughput{
+			ReadCapacityUnits:  aws.Int64(ru), // Required
+			WriteCapacityUnits: aws.Int64(wu), // Required
+		},
+		// Not for now. Mainly because only one operation per UpdateTable() call. Makes it annoying.
+		// StreamSpecification: &dynamodb.StreamSpecification{
+		// 	StreamEnabled:  aws.Bool(true),
+		// 	StreamViewType: aws.String("StreamViewType"),
+		// },
+	}
+	response, err := svc.UpdateTable(params)
+	if err == nil {
+		success = true
+	}
+
+	return success, response, err
+}
+
 // Updates a key in DynamoDB
 func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	var err error

@@ -14,6 +14,7 @@ import (
 type Shipper interface {
 	CreateConfig(config.Options) (bool, interface{}, error)
 	DeleteConfig(config.Options) (bool, interface{}, error)
+	UpdateConfig(config.Options, map[string]interface{}) (bool, interface{}, error)
 	Update(config.Options) (bool, config.Node, error)
 	Get(config.Options) (bool, config.Node, error)
 	Delete(config.Options) (bool, config.Node, error)
@@ -37,17 +38,29 @@ func CreateConfig(opts config.Options) (bool, interface{}, error) {
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.CreateConfig(opts)
 	} else {
-		err = errors.New("Invalid shipper adapter.")
+		err = errors.New("Invalid shipper interface.")
 	}
 	return false, nil, err
 }
 
+// Deletes an existing configuration
 func DeleteConfig(opts config.Options) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.DeleteConfig(opts)
 	} else {
-		err = errors.New("Invalid shipper adapter.")
+		err = errors.New("Invalid shipper interface.")
+	}
+	return false, nil, err
+}
+
+// Updates the options/settings for a configuration (may not be implementd by each interface)
+func UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
+	var err error
+	if s, ok := shippers[opts.StorageInterfaceName]; ok {
+		return s.UpdateConfig(opts, settings)
+	} else {
+		err = errors.New("Invalid shipper interface.")
 	}
 	return false, nil, err
 }
@@ -61,7 +74,7 @@ func Update(opts config.Options) (bool, config.Node, error) {
 			return s.Update(opts)
 		}
 	} else {
-		err = errors.New("Invalid shipper adapter.")
+		err = errors.New("Invalid shipper interface.")
 	}
 	return false, node, err
 }
@@ -73,7 +86,7 @@ func Get(opts config.Options) (bool, config.Node, error) {
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.Get(opts)
 	} else {
-		err = errors.New("Invalid shipper adapter.")
+		err = errors.New("Invalid shipper interface.")
 	}
 	return false, node, err
 }
@@ -88,7 +101,7 @@ func Delete(opts config.Options) (bool, config.Node, error) {
 		}
 
 	} else {
-		err = errors.New("Invalid shipper adapter.")
+		err = errors.New("Invalid shipper interface.")
 	}
 	return false, node, err
 }
