@@ -15,6 +15,7 @@ type Shipper interface {
 	CreateConfig(config.Options) (bool, interface{}, error)
 	DeleteConfig(config.Options) (bool, interface{}, error)
 	UpdateConfig(config.Options, map[string]interface{}) (bool, interface{}, error)
+	ConfigState(config.Options) string
 	Update(config.Options) (bool, config.Node, error)
 	Get(config.Options) (bool, config.Node, error)
 	Delete(config.Options) (bool, config.Node, error)
@@ -63,6 +64,15 @@ func UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, i
 		err = errors.New("Invalid shipper interface.")
 	}
 	return false, nil, err
+}
+
+// Returns the config state (just a simple string message, could be "ACTIVE" for example)
+// TODO: May get more elaborate and have codes for this too, but will probably always have a string message
+func ConfigState(opts config.Options) string {
+	if s, ok := shippers[opts.StorageInterfaceName]; ok {
+		return s.ConfigState(opts)
+	}
+	return ""
 }
 
 // Updates a key value in the configuration

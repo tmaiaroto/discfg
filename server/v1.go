@@ -147,6 +147,10 @@ func v1DeleteCfg(c *echo.Context) error {
 // Gets/sets options for a configuration
 func v1OptionsCfg(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
+	resp := config.ResponseObject{
+		Action: "info",
+	}
+
 	// If nothing that would change a configuration's options/settings are passed,
 	// then return commands.Info() ... Otherwise, call a new commands.UpdateInfo() function...
 	// That then adjusts settings and returns Info() anyway.
@@ -183,5 +187,32 @@ func v1OptionsCfg(c *echo.Context) error {
 	// at that point even if passed.
 	//
 	//
-	return c.JSON(http.StatusOK, commands.Info(Options, map[string]interface{}{}))
+	// SO. If there's been a body passed, parsed JSON, call commands.UpdateCfg()
+	// Then still return this. I believe. And Hope. That it will immediately see the change
+	// and then in the `CfgState` say something like "PENDING" ... Then the user knows their change
+	// is being made. Check OPTIONS again (without passing data) to see when change has been made.
+	// An HTTP OPTIONS request does not cache and in this case we really don't want it to.
+
+	var settings map[string]interface{}
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		resp.Error = err.Error()
+		resp.Message = "Something went wrong reading the body of the request."
+		// resp.ErrorCode = 500 <-- TODO
+	} else if len(b) > 0 {
+		resp := config.ResponseObject{
+			Action: "update cfg",
+		}
+		//Options.Value = b
+		if err := json.Unmarshal(b, &settings); err != nil {
+			resp.Error = err.Error()
+			resp.Message = "Something went wrong reading the body of the request."
+			return c.JSON(http.StatusOK, resp)
+		}
+		resp = commands.UpdateCfg(Options, settings)
+	} else {
+		resp = commands.Info(Options)
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }

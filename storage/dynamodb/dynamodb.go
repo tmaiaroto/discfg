@@ -168,6 +168,23 @@ func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interfa
 	return success, response, err
 }
 
+// Returns the DynamoDB table state
+func (db DynamoDB) ConfigState(opts config.Options) string {
+	svc := Svc(opts)
+
+	params := &dynamodb.DescribeTableInput{
+		TableName: aws.String(opts.CfgName), // Required
+	}
+	resp, err := svc.DescribeTable(params)
+	if err != nil {
+		// Print the error, cast err to awserr.Error to get the Code and
+		// Message from an error.
+		//fmt.Println(err.Error())
+		return ""
+	}
+	return *resp.Table.TableStatus
+}
+
 // Updates a key in DynamoDB
 func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	var err error

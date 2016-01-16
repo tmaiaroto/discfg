@@ -53,6 +53,8 @@ type ResponseObject struct {
 	CfgModifiedNanoseconds int64 `json:"cfgModifiedNanoseconds,omitempty"`
 	// A parsed date for humans to read
 	CfgModifiedParsed string `json:"cfgModifiedParsed,omitempty"`
+	// Configuration state (some storage engines, such as DynamoDB, have "active" and "updating" states)
+	CfgState string `json:"cfgState,omitempty"`
 }
 
 // NOTES ON NODES:

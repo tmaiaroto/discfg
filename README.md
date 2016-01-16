@@ -17,8 +17,8 @@ systems level needs. discfg is looking more toward applications.
 
 ------
 
-A distributed configuration service built on top of Amazon Web Services. Specifically, it uses 
-Lambda, DyanmoDB, and API Gateway to access it all. Though it can also be used via command line.
+A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
+it uses Lambda, DyanmoDB, and API Gateway to access it all. Though it can also be used via command line.
 
 
 ### Quick Example Usage

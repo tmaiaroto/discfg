@@ -16,7 +16,7 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.3.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.4.0"}
 
 var DataFile = ""
 
@@ -97,6 +97,41 @@ var deleteCfgCmd = &cobra.Command{
 		commands.Out(Options, resp)
 	},
 }
+var updateCfgCmd = &cobra.Command{
+	Use:   "update",
+	Short: "update config storage settings",
+	Long:  `Adjusts options for a config's storage engine`,
+	Run: func(cmd *cobra.Command, args []string) {
+		name := commands.GetDiscfgNameFromFile()
+		Options.CfgName = name
+		var settings map[string]interface{}
+
+		switch len(args) {
+		case 1:
+			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
+				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
+			}
+			break
+		case 2:
+			Options.CfgName = args[0]
+			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
+				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
+			}
+		}
+		resp := commands.UpdateCfg(Options, settings)
+		commands.Out(Options, resp)
+	},
+}
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "config information",
+	Long:  `Information about the config including version and modified time`,
+	Run: func(cmd *cobra.Command, args []string) {
+		setOptsFromArgs(args)
+		resp := commands.Info(Options)
+		commands.Out(Options, resp)
+	},
+}
 
 var setCmd = &cobra.Command{
 	Use:   "set",
@@ -125,41 +160,6 @@ var deleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		setOptsFromArgs(args)
 		resp := commands.DeleteKey(Options)
-		commands.Out(Options, resp)
-	},
-}
-var infoCmd = &cobra.Command{
-	Use:   "info",
-	Short: "config information",
-	Long:  `Information about the config including version and modified time`,
-	Run: func(cmd *cobra.Command, args []string) {
-		setOptsFromArgs(args)
-		resp := commands.Info(Options, map[string]interface{}{})
-		commands.Out(Options, resp)
-	},
-}
-var updateCfgCmd = &cobra.Command{
-	Use:   "update",
-	Short: "update config storage settings",
-	Long:  `Adjusts options for a config's storage engine`,
-	Run: func(cmd *cobra.Command, args []string) {
-		name := commands.GetDiscfgNameFromFile()
-		Options.CfgName = name
-		var settings map[string]interface{}
-
-		switch len(args) {
-		case 1:
-			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
-				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
-			}
-			break
-		case 2:
-			Options.CfgName = args[0]
-			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
-				commands.Out(Options, config.ResponseObject{Action: "update", Error: err.Error()})
-			}
-		}
-		resp := commands.Info(Options, settings)
 		commands.Out(Options, resp)
 	},
 }

@@ -14,12 +14,13 @@ import (
 // Creates a new configuration
 func CreateCfg(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
-		Action: "create",
+		Action: "create cfg",
 	}
 	if len(opts.CfgName) > 0 {
 		success, _, err := storage.CreateConfig(opts)
 		if err != nil {
 			resp.Error = err.Error()
+			resp.Message = "Error creating the configuration"
 		}
 		if success {
 			resp.Message = "Successfully created the configuration"
@@ -35,12 +36,13 @@ func CreateCfg(opts config.Options) config.ResponseObject {
 // Deletes a configuration
 func DeleteCfg(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
-		Action: "delete",
+		Action: "delete cfg",
 	}
 	if len(opts.CfgName) > 0 {
 		success, _, err := storage.DeleteConfig(opts)
 		if err != nil {
 			resp.Error = err.Error()
+			resp.Message = "Error deleting the configuration"
 		}
 		if success {
 			resp.Message = "Successfully deleted the configuration"
@@ -50,6 +52,29 @@ func DeleteCfg(opts config.Options) config.ResponseObject {
 		// TODO: Error code for this, message may not be necessary - is it worthwhile to try and figure out exactly which arguments were missing?
 		// Maybe a future thing to do. I need to git er done right now.
 	}
+	return resp
+}
+
+// Updates a configuration's options/settings (if applicable, depends on the interface)
+func UpdateCfg(opts config.Options, settings map[string]interface{}) config.ResponseObject {
+	resp := config.ResponseObject{
+		Action: "update cfg",
+	}
+
+	// Note: For some storage engines, such as DynamoDB, it could take a while for changes to be reflected.
+	if len(settings) > 0 {
+		success, _, updateErr := storage.UpdateConfig(opts, settings)
+		if updateErr != nil {
+			resp.Error = updateErr.Error()
+			resp.Message = "Error updating the configuration"
+		}
+		if success {
+			resp.Message = "Successfully updated the configuration"
+		}
+	} else {
+		resp.Error = NotEnoughArgsMsg
+	}
+
 	return resp
 }
 
@@ -179,10 +204,8 @@ func DeleteKey(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Information about the configuration including global version/state and modified time.
-// Also, information about the underlying storage engine and it's settings. If settings are
-// passed, they will be updated by each storage adapter as needed.
-func Info(opts config.Options, settings map[string]interface{}) config.ResponseObject {
+// Information about the configuration including global version/state and modified time
+func Info(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "info",
 	}
@@ -191,27 +214,12 @@ func Info(opts config.Options, settings map[string]interface{}) config.ResponseO
 		// Just get the root key
 		opts.Key = "/"
 
-		// TODO: Refactor. Pull this out into its own function.
-		// The original thinking was based around an HTTP OPTIONS request.
-		// If data in the body, update. Either way, return a JSON response with the info and storage settings.
-		// It doesn't make sense for the CLI and the API can call two functions. So...Just pull this out.
-		//
-		// If settings were passed
-		// Note: For some storage engines, such as DynamoDB, it could take a while for changes to be reflected.
-		if len(settings) > 0 {
-			_, _, updateErr := storage.UpdateConfig(opts, settings)
-			if updateErr != nil {
-				resp.Error = updateErr.Error()
-				return resp
-			}
-		}
-
 		success, storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
 		}
 		if success {
-			// Debating putting the node value on here...
+			// Debating putting the node value on here... (allowing users to store values on the config or "root")
 			// resp.Node = storageResponse
 			// Set the configuration version and modified time on the response
 			// Node.CfgVersion and Node.CfgModifiedNanoseconds are not included in the JSON output
@@ -224,8 +232,16 @@ func Info(opts config.Options, settings map[string]interface{}) config.ResponseO
 			modified := time.Unix(resp.CfgModified, 0)
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
 
+			// Get the status (only applicable for some storage interfaces, such as DynamoDB)
+			resp.CfgState = storage.ConfigState(opts)
+
 			var buffer bytes.Buffer
 			buffer.WriteString(opts.CfgName)
+			if resp.CfgState != "" {
+				buffer.WriteString(" (")
+				buffer.WriteString(resp.CfgState)
+				buffer.WriteString(")")
+			}
 			buffer.WriteString(" version ")
 			buffer.WriteString(strconv.FormatInt(resp.CfgVersion, 10))
 			buffer.WriteString(" last modified ")
