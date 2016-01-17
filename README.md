@@ -77,6 +77,35 @@ You should see something like this:
 NOTE: You will only see ```prevNode``` populated upon an update. discfg does not store a history
 of values.
 
+### Running the API Server
+
+While discfg is meant to be a tool for a "serverless" architecture, it doesn't mean you can't
+run it on your own server. Currently, there is no storage engine that would keep the data on 
+the same server, but the RESTful API can certainly be hosted there. So you can work with your 
+configurations using JSON messages instead of just on the CLI or having to bring discfg into 
+your own Go package.
+
+In other words, discfg is language agnostic. You can use it with any application you build
+so long as that application can make HTTP requests.
+
+The API server can be on your local machine, or a remote server. The point is convenience. 
+In fact, it's exactly what will run in a Lambda and be exposed through API Gateway to create
+a serverless version of it.
+
+Currently, discfg has no authentication built in. _Do not run it exposed to the world._ 
+The point of using API Gateway is that Amazon provides you with the ability to protect your API.
+
+You'll find the API server under the `server` directory. If you have the project cloned from
+the repo, you could simply go to that directory and run `go main.go v1.go` or you could build
+a binary and run it from where ever you like.
+
+It runs on port `8899` by default, but you can change that with a `--port` flag. Also note
+that discfg only uses AWS for storage engines right now so you should be sure to pay attention
+to the AWS region. It's `us-east-1` by default, but you can change that too with a `region` flag.
+
+Note: Releases of discfg will include both binaries, so you'll basically just be able to take
+that and run with it.
+
 ## Why Yet Another One?
 
 The goal is not to re-invent the wheel. There are many other solutions out there that work well. 

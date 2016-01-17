@@ -45,6 +45,10 @@ type ResponseObject struct {
 	CurrentDiscfg string `json:"currentDiscfg,omitempty"`
 	Error         string `json:"error,omitempty"`
 	Message       string `json:"message,omitempty"`
+	// Add this? Might be useful for troubleshooting, but users shouldn't really need to worry about it.
+	// On the other hand, for things like DynamoDB, it's handy to know where the config stands in terms of scalability/capacity.
+	// For things like S3, there's no real settings to care about (for the most part at least).
+	// StorageResponse interface{} `json:"storageResponse,omitempty"`
 	// Information about the config
 	CfgVersion int64 `json:"cfgVersion,omitempty"`
 	// In seconds since that's probably more common for people

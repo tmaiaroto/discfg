@@ -8,8 +8,8 @@ import (
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
 	//"github.com/ugorji/go/codec" // <-- may eventually be used as a different output format. have to see what echo supports.
-	//"log"
 	"io/ioutil"
+	//"log"
 	"net/http"
 	"strconv"
 )
@@ -151,48 +151,6 @@ func v1OptionsCfg(c *echo.Context) error {
 		Action: "info",
 	}
 
-	// If nothing that would change a configuration's options/settings are passed,
-	// then return commands.Info() ... Otherwise, call a new commands.UpdateInfo() function...
-	// That then adjusts settings and returns Info() anyway.
-	// Or maybe commands.Info() can be a getter and setter...Eh... maybe.
-	//
-	// OR. Make another route and handler for adjusting configuration settings using PUT.
-	// https://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html ...says OPTIONS can contain
-	// some data in the body request, though defines no use for it. So it's up in the air.
-	//
-	// It might then also be neat to hav an OPTIONS for other routes.
-	// These responses would all be handled here and be just for self-documenting the API.
-	// OPTIONS request on a key path for example would return information about how to
-	// update or delete that specific key. On /v1/:name/key it might then just be
-	// instructions for creating a key.
-	//
-	// Need to think this over. Sleep on it.
-	// YES. All of it. OPTIONS all the things!
-	//
-	// There will only be so many options that can be changed after creation.
-	// For example, if we wanted to gzip the data ... That couldn't be turned on/off after creation.
-	// Doing so would mean all existing values would need to change.
-	// Though for gzip, I think it might be a nice additional value on the record that specifies the data is gzipped.
-	// So it can be done on a key by key basis. So if it was sent gzipped, then when it is read there'll be a simple
-	// if/then that unzips. So users can decide how the data is stored. ... Think about that too. I'm not sure they
-	// should care or have to say on each key. It likely should just be done always. Or on a per configuration basis.
-	// So again, that kinda stuff must be set up front upon creation and can not change.
-	//
-	// So the options being set here are going to be quite limited.
-	// Though I don't want to handle them all here... EAch adapter should.
-	//
-	// So take a map of options. map[string]interface{}
-	// Then pass that to each storage adapter. Then each adapter can figure out and choose which things to use/set.
-	// Which means the gzip setting, and any other setting that can't be changed after creation, is simply ignored
-	// at that point even if passed.
-	//
-	//
-	// SO. If there's been a body passed, parsed JSON, call commands.UpdateCfg()
-	// Then still return this. I believe. And Hope. That it will immediately see the change
-	// and then in the `CfgState` say something like "PENDING" ... Then the user knows their change
-	// is being made. Check OPTIONS again (without passing data) to see when change has been made.
-	// An HTTP OPTIONS request does not cache and in this case we really don't want it to.
-
 	var settings map[string]interface{}
 	b, err := ioutil.ReadAll(c.Request().Body)
 	if err != nil {
@@ -209,10 +167,9 @@ func v1OptionsCfg(c *echo.Context) error {
 			resp.Message = "Something went wrong reading the body of the request."
 			return c.JSON(http.StatusOK, resp)
 		}
-		resp = commands.UpdateCfg(Options, settings)
-	} else {
-		resp = commands.Info(Options)
+		return c.JSON(http.StatusOK, commands.UpdateCfg(Options, settings))
+
 	}
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, commands.Info(Options))
 }
