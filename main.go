@@ -16,7 +16,7 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.4.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.5.0"}
 
 var DataFile = ""
 
@@ -70,10 +70,20 @@ var createCfgCmd = &cobra.Command{
 	Short: "create config",
 	Long:  `Creates a new discfg distributed configuration`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
+		var settings map[string]interface{}
+		switch len(args) {
+		case 1:
+			settings = map[string]interface{}{}
 			Options.CfgName = args[0]
+			break
+		case 2:
+			Options.CfgName = args[0]
+			if err := json.Unmarshal([]byte(args[0]), &settings); err != nil {
+				commands.Out(Options, config.ResponseObject{Action: "create", Error: err.Error()})
+			}
 		}
-		resp := commands.CreateCfg(Options)
+
+		resp := commands.CreateCfg(Options, settings)
 		commands.Out(Options, resp)
 	},
 }
@@ -178,15 +188,17 @@ func main() {
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.OutputFormat, "format", "f", "human", "Output format for responses (human|json|slient)")
 
 	// AWS options & credentials
+	// TODO: Also deprecate... have defaults, but then accept JSON string (or file) for options
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.Region, "region", "l", "us-east-1", "AWS Region to use")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.DynamoDB.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 
-	// cfgCmd spcific options
+	// cfgCmd specific options
+	// TODO: deprecate
 	// (soon to be ditched in favor of passing a JSON string for settings - since we can't account for all options across all storage engines)
-	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "r", 1, "DynamoDB Table Read Capacity Units")
-	cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "w", 2, "DynamoDB Table Write Capacity Units")
+	// cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.ReadCapacityUnits, "readCapacity", "r", 1, "DynamoDB Table Read Capacity Units")
+	// cfgCmd.PersistentFlags().Int64VarP(&Options.Storage.DynamoDB.WriteCapacityUnits, "writeCapacity", "w", 2, "DynamoDB Table Write Capacity Units")
 
 	// Additional options by some operations
 	DiscfgCmd.PersistentFlags().StringVarP(&DataFile, "data", "d", "", "Data file to read for value")

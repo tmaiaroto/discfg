@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	//"log"
 	"net/http"
-	"strconv"
 )
 
 // Set the routes for V1 API
@@ -123,19 +122,30 @@ func v1DeleteKey(c *echo.Context) error {
 // Creates a new configuration
 func v1CreateCfg(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
-
-	// Optionally set write capacity units (for DynamoDB, defaults to 1)
-	wu, err := strconv.ParseInt(c.Query("writeUnits"), 10, 64)
-	if err == nil {
-		Options.Storage.WriteCapacityUnits = wu
-	}
-	// Optionally set read capacity units (for DynamoDB, defaults to 2)
-	ru, err := strconv.ParseInt(c.Query("readUnits"), 10, 64)
-	if err == nil {
-		Options.Storage.ReadCapacityUnits = ru
+	resp := config.ResponseObject{
+		Action: "create cfg",
 	}
 
-	return c.JSON(http.StatusOK, commands.CreateCfg(Options))
+	// Any settings to pass along to the storage interface (for example, ReadCapacityUnits and WriteCapacityUnits for DynamoDB).
+	var settings map[string]interface{}
+	b, err := ioutil.ReadAll(c.Request().Body)
+	if err != nil {
+		resp.Error = err.Error()
+		resp.Message = "Something went wrong reading the body of the request."
+		// resp.ErrorCode = 500 <-- TODO
+	} else if len(b) > 0 {
+		resp := config.ResponseObject{
+			Action: "create cfg",
+		}
+		//Options.Value = b
+		if err := json.Unmarshal(b, &settings); err != nil {
+			resp.Error = err.Error()
+			resp.Message = "Something went wrong reading the body of the request."
+			return c.JSON(http.StatusOK, resp)
+		}
+	}
+
+	return c.JSON(http.StatusOK, commands.CreateCfg(Options, settings))
 }
 
 // Deletes a configuration
@@ -168,7 +178,6 @@ func v1OptionsCfg(c *echo.Context) error {
 			return c.JSON(http.StatusOK, resp)
 		}
 		return c.JSON(http.StatusOK, commands.UpdateCfg(Options, settings))
-
 	}
 
 	return c.JSON(http.StatusOK, commands.Info(Options))

@@ -51,11 +51,22 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 }
 
 // Creates a new table for a configuration
-func (db DynamoDB) CreateConfig(opts config.Options) (bool, interface{}, error) {
+func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
-	wu := opts.Storage.DynamoDB.WriteCapacityUnits
-	ru := opts.Storage.DynamoDB.ReadCapacityUnits
+	// TODO: deprecate
+	// wu := opts.Storage.DynamoDB.WriteCapacityUnits
+	// ru := opts.Storage.DynamoDB.ReadCapacityUnits
+	// New settings to override the old.
+	wu := int64(1)
+	ru := int64(2)
+	if val, ok := settings["WriteCapacityUnits"]; ok {
+		wu = int64(val.(float64))
+	}
+	if val, ok := settings["ReadCapacityUnits"]; ok {
+		ru = int64(val.(float64))
+	}
+
 	// Must be at least 1
 	if wu < 1 {
 		wu = int64(1)
@@ -130,9 +141,12 @@ func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) 
 func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
-	wu := opts.Storage.DynamoDB.WriteCapacityUnits
-	ru := opts.Storage.DynamoDB.ReadCapacityUnits
+	// TODO: deprecate
+	// wu := opts.Storage.DynamoDB.WriteCapacityUnits
+	// ru := opts.Storage.DynamoDB.ReadCapacityUnits
 	// New settings to override the old.
+	wu := int64(1)
+	ru := int64(2)
 	if val, ok := settings["WriteCapacityUnits"]; ok {
 		wu = int64(val.(float64))
 	}

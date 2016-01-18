@@ -12,7 +12,7 @@ import (
 // A shipper can send information into a database or log etc. While DynamoDB is the planned data store,
 // who knows what will happen in the future. A simple interface never hurts.
 type Shipper interface {
-	CreateConfig(config.Options) (bool, interface{}, error)
+	CreateConfig(config.Options, map[string]interface{}) (bool, interface{}, error)
 	DeleteConfig(config.Options) (bool, interface{}, error)
 	UpdateConfig(config.Options, map[string]interface{}) (bool, interface{}, error)
 	ConfigState(config.Options) string
@@ -34,10 +34,10 @@ var shippers = map[string]Shipper{
 }
 
 // Creates a new configuration returning success true/false along with any response and error.
-func CreateConfig(opts config.Options) (bool, interface{}, error) {
+func CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
-		return s.CreateConfig(opts)
+		return s.CreateConfig(opts, settings)
 	} else {
 		err = errors.New("Invalid shipper interface.")
 	}

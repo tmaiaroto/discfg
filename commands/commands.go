@@ -12,12 +12,12 @@ import (
 )
 
 // Creates a new configuration
-func CreateCfg(opts config.Options) config.ResponseObject {
+func CreateCfg(opts config.Options, settings map[string]interface{}) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "create cfg",
 	}
 	if len(opts.CfgName) > 0 {
-		success, _, err := storage.CreateConfig(opts)
+		success, _, err := storage.CreateConfig(opts, settings)
 		if err != nil {
 			resp.Error = err.Error()
 			resp.Message = "Error creating the configuration"
