@@ -15,24 +15,20 @@ type Options struct {
 	Value                []byte
 	TTL                  int64
 	StorageInterfaceName string
-	// TODO: This probably shouldn't be here. Not like this. Maybe an interface{}
+	// Storage options, for now AWS is the only supported storage
 	Storage struct {
-		DynamoDB
+		AWS
 	}
 	Version      string
 	OutputFormat string
 }
 
-// TODO: Same as above. This kind of stuff should probably be in each interface.
-// In fact a simple map[string]interface{} should suffice for storage options.
-type DynamoDB struct {
-	Region             string
-	AccessKeyId        string
-	SecretAccessKey    string
-	SessionToken       string
-	CredProfile        string
-	WriteCapacityUnits int64
-	ReadCapacityUnits  int64
+type AWS struct {
+	Region          string
+	AccessKeyId     string
+	SecretAccessKey string
+	SessionToken    string
+	CredProfile     string
 }
 
 // The response for output.

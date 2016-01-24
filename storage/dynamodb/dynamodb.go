@@ -20,18 +20,18 @@ type DynamoDB struct {
 
 // Configures DynamoDB service to use
 func Svc(opts config.Options) *dynamodb.DynamoDB {
-	awsConfig := &aws.Config{Region: aws.String(opts.Storage.DynamoDB.Region)}
+	awsConfig := &aws.Config{Region: aws.String(opts.Storage.AWS.Region)}
 
 	// If a session was passed... (AWS Lambda does this)
-	if opts.Storage.DynamoDB.SessionToken != "" {
-		os.Setenv("AWS_SESSION_TOKEN", opts.Storage.DynamoDB.SessionToken)
+	if opts.Storage.AWS.SessionToken != "" {
+		os.Setenv("AWS_SESSION_TOKEN", opts.Storage.AWS.SessionToken)
 	}
 
 	// Look in a variety of places for AWS credentials. First, try the credentials file set by AWS CLI tool.
 	// Note the empty string instructs to look under default file path (different based on OS).
 	// This file can have multiple profiles and a default profile will be used unless otherwise configured.
 	// See: https://godoc.org/github.com/aws/aws-sdk-go/aws/credentials#SharedCredentialsProvider
-	creds := credentials.NewSharedCredentials("", opts.Storage.DynamoDB.CredProfile)
+	creds := credentials.NewSharedCredentials("", opts.Storage.AWS.CredProfile)
 	_, err := creds.Get()
 	// If that failed, try environment variables.
 	if err != nil {
@@ -42,8 +42,8 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 	}
 
 	// If credentials were passed via config, then use those. They will take priority over other methods.
-	if opts.Storage.DynamoDB.AccessKeyId != "" && opts.Storage.DynamoDB.SecretAccessKey != "" {
-		creds = credentials.NewStaticCredentials(opts.Storage.DynamoDB.AccessKeyId, opts.Storage.DynamoDB.SecretAccessKey, "")
+	if opts.Storage.AWS.AccessKeyId != "" && opts.Storage.AWS.SecretAccessKey != "" {
+		creds = credentials.NewStaticCredentials(opts.Storage.AWS.AccessKeyId, opts.Storage.AWS.SecretAccessKey, "")
 	}
 	awsConfig.Credentials = creds
 
@@ -54,10 +54,6 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
-	// TODO: deprecate
-	// wu := opts.Storage.DynamoDB.WriteCapacityUnits
-	// ru := opts.Storage.DynamoDB.ReadCapacityUnits
-	// New settings to override the old.
 	wu := int64(1)
 	ru := int64(2)
 	if val, ok := settings["WriteCapacityUnits"]; ok {
@@ -141,10 +137,6 @@ func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) 
 func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
-	// TODO: deprecate
-	// wu := opts.Storage.DynamoDB.WriteCapacityUnits
-	// ru := opts.Storage.DynamoDB.ReadCapacityUnits
-	// New settings to override the old.
 	wu := int64(1)
 	ru := int64(2)
 	if val, ok := settings["WriteCapacityUnits"]; ok {

@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.4.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.6.0"}
 
 func main() {
 	// TODO: remove
@@ -18,7 +18,7 @@ func main() {
 	apiVersion := *flag.String("version", "v1", "API version")
 	region := *flag.String("region", "us-east-1", "AWS region")
 
-	Options.Storage.DynamoDB.Region = region
+	Options.Storage.AWS.Region = region
 
 	e := echo.New()
 
