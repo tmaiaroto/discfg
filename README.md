@@ -1,25 +1,14 @@
 # Distributed Config (discfg)
 
 **NOTE** This project is under active development and is not considered production ready.
-In fact, under no circumstances should you use this in production. However, I always appreciate
-feedback. The goals of this project are constantly changing and while I first compared and 
-contrasted it with etcd, it's quickly departing from the same feature set.
-
-discfg is being created for a very simple reason. Shared application configuration and state 
-within AWS services. The expectation is that you're developing some distributed application. 
-Perhaps a series of micro/services.
-
-In the future, maybe it will have the ability to run independent of AWS. However, the first
-cut of this will heavily rely upon AWS. This is for convenience and cost. The drawback is 
-speed and consistency. Solutions like etcd will ultimately be faster and better geared for
-systems level needs. discfg is looking more toward applications.
-
 
 ------
 
 A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
-it uses Lambda, DyanmoDB, and API Gateway to access it all. Though it can also be used via command line.
+it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
 
+It can install to your system as a binary, so managing configuration from any machine is simple from
+a command line.
 
 ### Quick Example Usage
 
@@ -81,19 +70,20 @@ of values.
 
 While discfg is meant to be a tool for a "serverless" architecture, it doesn't mean you can't
 run it on your own server. Currently, there is no storage engine that would keep the data on 
-the same server, but the RESTful API can certainly be hosted there. So you can work with your 
-configurations using JSON messages instead of just on the CLI or having to bring discfg into 
-your own Go package.
+the same server (and that defeats the whole purpose of being distributed), but the RESTful API 
+can certainly be hosted on any server. So you can work with your configurations using JSON
+instead of just on the CLI or having to bring discfg into your own Go package.
 
-In other words, discfg is language agnostic. You can use it with any application you build
-so long as that application can make HTTP requests.
+In other words, discfg is flexible and language agnostic. You can use it with any application 
+you build so long as that application can make HTTP requests (or even just execute the binary).
 
-The API server can be on your local machine, or a remote server. The point is convenience. 
+The API server can be on your local machine, or a remote server. Or both. The point is convenience. 
 In fact, it's exactly what will run in a Lambda and be exposed through API Gateway to create
 a serverless version of it.
 
 Currently, discfg has no authentication built in. _Do not run it exposed to the world._ 
-The point of using API Gateway is that Amazon provides you with the ability to protect your API.
+The point of relying on AWS is that Amazon provides you with the ability to control access.
+Be it the API server exposed through API Gateway or even just a DynamoDB database.
 
 You'll find the API server under the `server` directory. If you have the project cloned from
 the repo, you could simply go to that directory and run `go main.go v1.go` or you could build
@@ -109,39 +99,39 @@ that and run with it.
 ## Why Yet Another One?
 
 The goal is not to re-invent the wheel. There are many other solutions out there that work well. 
-However, they are mostly self-host solutions. As a result, there is a bit of maintenance involved
+However, they are mostly "self-host" solutions. As a result, there is a bit of maintenance involved
 and additional cost to get the redundancy. Plus, many of these solutions don't really take access 
 control into account. That's up to you to manage.
 
-There has to be a cheaper, more convenient, option in the mix. Yes, you'll have to make some 
+There should be a cheaper, more convenient, option in the mix. Yes, you'll have to make some 
 concessions for that...But that doesn't mean you still can't get a highly available solution
-on a tight budget. discfg is so cheap and so convenient that you'll want to use it for basically
-every application you build. Well, maybe not every project...But that's the rationale and that's
-a big part of why it's not wheel re-invention. You will use discfg in a different manner to 
-accomplish _many_ of the same goals, but not all.
+that costs less and is easier to maintain.
 
-This project was heavily inspired by [etcd](https://github.com/coreos/etcd). The goal was to create 
-an alternative that would be cheaper to host, leverage AWS infrastructure, and have a flexible 
-storage engine which would allow you to choose how to storage the data. However, the project 
-has since deviated far away from etcd. There are some very important differences and the intended 
-use case is a bit different.
+Originally, this project was heavily inspired by [etcd](https://github.com/coreos/etcd). The 
+goal was to create an alternative that would be cheaper to host, leverage AWS infrastructure, 
+and have a flexible storage engine which would allow you to choose how to storage the data. 
 
-The goal of discfg is to provide a configuration and service discovery solution for **applications.** 
-The focus is not on creating a storage solution for systems level use, but rather a conventional 
-solution for application configuration and state.
+However, the project has since deviated far away from etcd. There are some very important 
+differences and the intended use case is a bit different. People are using etcd (and raft) 
+for some fantastic things. The target use case for discfg isn't quite the same, though there
+is some cross-over.
 
-In fact, due to it's flexiblity, there may be other possible uses beyond the original intent. 
+In fact, due to discfg's flexiblity, there may be other possible uses beyond the original intent
+of (micro)services within AWS. 
 
-When building _applications_ or services, configuration and state become a challenge. Especially 
-in a distributed environment or when working with others. However it's not always "mission critial"
-and an eventually consistent database like DynamoDB may work just fine. We may or may not have 
+When building _applications_ or (micro)services, configuration and state become a challenge. 
+However an eventually consistent database like DynamoDB may work just fine. We may or may not have 
 1,000's of writes per second. Either way, since we are leveraging Amazon services we should be able
-to scale in a cost effective manner. There's just some trade offs for the cost and convenience.
+to scale in a cost effective manner. There's just some trade offs for that cost and convenience.
 
-This tool will use Amazon DynamoDB to hold the configuration, but it was designed to be able to use 
-other storage engines in the future (such as S3).
+This tool will use Amazon DynamoDB to store data for each configuration, but it was designed to be 
+able to use other storage engines in the future (such as S3). Each storage solution is going to come
+with different pros and cons.
 
-Lambda with API Gateway can be used to work with the configuration (GET, PUT, DELETE) so it feels 
-more like etcd. However, discfg can be used from the command line or you can run your own REST API
-server(s) as well. Or any combination of those interfaces. You could even import the package into 
-your own Go application.
+To be completely serverless, Lambda with API Gateway can be used to work with the configuration. 
+Additionally,discfg can be used from the command line or you can run your own REST API server(s). 
+You could even import the package into your own Go application.
+
+Essentially, discfg is basically an interface around DynamoDB (and other distributed storage solutions).
+It's not responsible for the distributed storage itself. Theoretically, this means it could even use
+etcd as a storage engine (for some odd reason).
