@@ -31,7 +31,6 @@ var DiscfgCmd = &cobra.Command{
 	},
 }
 
-// test
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "discfg version number",
