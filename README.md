@@ -101,7 +101,8 @@ that and run with it.
 The goal is not to re-invent the wheel. There are many other solutions out there that work well. 
 However, they are mostly "self-host" solutions. As a result, there is a bit of maintenance involved
 and additional cost to get the redundancy. Plus, many of these solutions don't really take access 
-control into account. That's up to you to manage. _A big goal for discfg is a serverless option._
+control into account. That's up to you to manage. _A big goal for discfg is to provide a serverless 
+option for application configuration._
 
 There should be a cheaper, perhaps more convenient, option in the mix. Yes, you'll have to make 
 some concessions for that...But that doesn't mean you still can't get a highly available solution
