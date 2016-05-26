@@ -1,0 +1,6 @@
+{
+  "name": "$input.params('name')",
+  "key": "$input.params('key')",
+  "value": "$util.escapeJavaScript($input.body)",
+  "ttl": "$input.params('ttl')"
+}

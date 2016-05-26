@@ -6,7 +6,6 @@ import (
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -43,30 +42,15 @@ func main() {
 		}
 
 		Options.Storage.AWS.Region = discfgDBRegion
-		// The following are set automatically.
-		// Options.Storage.AWS.AccessKeyId = os.Getenv("AWS_ACCESS_KEY_ID")
-		// Options.Storage.AWS.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
-		// Options.Storage.AWS.SessionToken = os.Getenv("AWS_SESSION_TOKEN")
-
 		// Each discfg API can be configured with a default table name.
 		Options.CfgName = discfgDBTable
 		// Overwritten by the message passed to the Lambda.
 		if m.Name != "" {
 			Options.CfgName = m.Name
 		}
-		// Comes from a path param from API Gateway.
 		Options.Key = m.Key
-		// Comes from a querystring value from API Gateway, ie. ?ttl=300
-		// Note: 0 is unlimited, no TTL.
-		if m.TTL != "" {
-			if ttl, err := strconv.ParseInt(m.TTL, 10, 64); err == nil {
-				Options.TTL = ttl
-			}
-		}
-		// Ends up being the POST body from API Gateway.
-		Options.Value = []byte(m.Value)
 
-		resp := commands.SetKey(Options)
+		resp := commands.GetKey(Options)
 
 		// TODO: this is a little repetitive...
 
