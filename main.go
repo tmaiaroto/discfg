@@ -31,6 +31,7 @@ var DiscfgCmd = &cobra.Command{
 	},
 }
 
+//
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "discfg version number",
@@ -213,7 +214,7 @@ func main() {
 
 // Takes positional command arguments and sets options from them (because some may be optional)
 func setOptsFromArgs(args []string) config.Options {
-	var o = config.Options
+	var o config.Options
 
 	// The user may have set a config name in a `.discfg` file, for convenience, to shorten the commands.
 	name := commands.GetDiscfgNameFromFile()

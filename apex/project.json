@@ -1,0 +1,12 @@
+
+{
+  "name": "discfg",
+  "description": "A simple serverless configuration",
+  "memory": 128,
+  "timeout": 5,
+  "defaultEnvironment": "dev",
+  "environment": {
+  	"DISCFG_REGION": "us-east-1",
+  	"DISCFG_TABLE": "testcfg"
+  }
+}

@@ -101,20 +101,20 @@ that and run with it.
 The goal is not to re-invent the wheel. There are many other solutions out there that work well. 
 However, they are mostly "self-host" solutions. As a result, there is a bit of maintenance involved
 and additional cost to get the redundancy. Plus, many of these solutions don't really take access 
-control into account. That's up to you to manage.
+control into account. That's up to you to manage. _A big goal for discfg is a serverless option._
 
-There should be a cheaper, more convenient, option in the mix. Yes, you'll have to make some 
-concessions for that...But that doesn't mean you still can't get a highly available solution
+There should be a cheaper, perhaps more convenient, option in the mix. Yes, you'll have to make 
+some concessions for that...But that doesn't mean you still can't get a highly available solution
 that costs less and is easier to maintain.
 
-Originally, this project was heavily inspired by [etcd](https://github.com/coreos/etcd). The 
-goal was to create an alternative that would be cheaper to host, leverage AWS infrastructure, 
+Originally, this project was heavily inspired by the wonderful [etcd](https://github.com/coreos/etcd). 
+The goal was to create an alternative that would be cheaper to host, leverage AWS infrastructure, 
 and have a flexible storage engine which would allow you to choose how to storage the data. 
 
 However, the project has since deviated far away from etcd. There are some very important 
 differences and the intended use case is a bit different. People are using etcd (and raft) 
 for some fantastic things. The target use case for discfg isn't quite the same, though there
-is some cross-over.
+is some cross-over. There's some ideas that discfg borrows from etcd.
 
 In fact, due to discfg's flexiblity, there may be other possible uses beyond the original intent
 of (micro)services within AWS. 

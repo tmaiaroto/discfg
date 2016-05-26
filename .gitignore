@@ -1,2 +1,5 @@
 discfg
 .discfg
+*.tfstate
+*.tfstate.backup
+.terraform
