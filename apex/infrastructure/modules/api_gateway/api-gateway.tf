@@ -64,9 +64,6 @@ resource "aws_api_gateway_method_response" "KeysPOSTMethod200" {
   resource_id = "${aws_api_gateway_resource.KeysKeyResource.id}"
   http_method = "${aws_api_gateway_method.KeysPOSTMethod.http_method}"
   status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
 }
 # Integration -> *Integration Response* -> Method Response -> Client
 resource "aws_api_gateway_integration_response" "KeysPOSTIntegrationResponse" {
@@ -108,9 +105,6 @@ resource "aws_api_gateway_method_response" "KeysGETMethod200" {
   resource_id = "${aws_api_gateway_resource.KeysKeyResource.id}"
   http_method = "${aws_api_gateway_method.KeysGETMethod.http_method}"
   status_code = "200"
-  response_models = {
-    "application/json" = "Empty"
-  }
 }
 # Integration -> *Integration Response* -> Method Response -> Client
 resource "aws_api_gateway_integration_response" "KeysGETIntegrationResponse" {
