@@ -45,34 +45,14 @@ func v1GetKey(c *echo.Context) error {
 	//case "jsonp":
 	//break
 	case "json", "application/json":
-		resp = formatJsonValue(resp)
+		resp = commands.FormatJsonValue(resp)
 		break
 	default:
-		resp = formatJsonValue(resp)
+		resp = commands.FormatJsonValue(resp)
 		break
 	}
 	// default response
 	return c.JSON(http.StatusOK, resp)
-}
-
-// Sets the Node Value (an interface{}) as a map[string]interface{} (from []byte which is how it's stored - at least for now)
-// so that it can be converted to JSON in the Echo response. If it can't be represented in a map, then it'll be set as a string.
-// For example, a string was set as the value, we can still represent that in JSON. However, if an image was stored...Then it's
-// going to look ugly. It won't be a base64 string, it'll be the string representation of the binary data. Which apparently Chrome
-// will render if given...But still. Not so hot. The user should know what they are setting and getting though and this should
-// still technically return JSON with a usable value. Valid JSON at that. Just with some funny looking characters =)
-func formatJsonValue(resp config.ResponseObject) config.ResponseObject {
-	// Don't attempt to Unmarshal or anything if the Value is empty. We wouldn't want to create a panic now.
-	if resp.Node.Value == nil {
-		return resp
-	}
-	var dat map[string]interface{}
-	if err := json.Unmarshal(resp.Node.Value.([]byte), &dat); err != nil {
-		resp.Node.Value = string(resp.Node.Value.([]byte))
-	} else {
-		resp.Node.Value = dat
-	}
-	return resp
 }
 
 // Sets a key in discfg

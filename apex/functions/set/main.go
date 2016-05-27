@@ -76,6 +76,6 @@ func main() {
 			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
 		}
 
-		return resp, nil
+		return commands.FormatJsonValue(resp), nil
 	})
 }
