@@ -1,5 +1,6 @@
-# Distributed Config (discfg)
 <img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png" width="200" align="middle"/>
+
+## Distributed Config (discfg)
 
 **NOTE** This project is under active development and is not considered production ready.
 
