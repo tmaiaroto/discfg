@@ -5,6 +5,7 @@ import (
 	"github.com/apex/go-apex"
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
+	"github.com/tmaiaroto/discfg/version"
 	"os"
 	"strconv"
 	"time"
@@ -24,10 +25,7 @@ type message struct {
 	Value string `json:"value"`
 }
 
-// TODO: Put elsewhere. This is becoming problmatic.
-const Version = "0.6.0"
-
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: Version}
+var options = config.Options{StorageInterfaceName: "dynamodb", Version: version.Semantic}
 
 func main() {
 	// If not set for some reason, use us-east-1 by default.
@@ -42,33 +40,31 @@ func main() {
 			return nil, err
 		}
 
-		Options.Storage.AWS.Region = discfgDBRegion
+		options.Storage.AWS.Region = discfgDBRegion
 		// The following are set automatically.
-		// Options.Storage.AWS.AccessKeyId = os.Getenv("AWS_ACCESS_KEY_ID")
-		// Options.Storage.AWS.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
-		// Options.Storage.AWS.SessionToken = os.Getenv("AWS_SESSION_TOKEN")
+		// options.Storage.AWS.AccessKeyId = os.Getenv("AWS_ACCESS_KEY_ID")
+		// options.Storage.AWS.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		// options.Storage.AWS.SessionToken = os.Getenv("AWS_SESSION_TOKEN")
 
 		// Each discfg API can be configured with a default table name.
-		Options.CfgName = discfgDBTable
+		options.CfgName = discfgDBTable
 		// Overwritten by the message passed to the Lambda.
 		if m.Name != "" {
-			Options.CfgName = m.Name
+			options.CfgName = m.Name
 		}
 		// Comes from a path param from API Gateway.
-		Options.Key = m.Key
+		options.Key = m.Key
 		// Comes from a querystring value from API Gateway, ie. ?ttl=300
 		// Note: 0 is unlimited, no TTL.
 		if m.TTL != "" {
 			if ttl, err := strconv.ParseInt(m.TTL, 10, 64); err == nil {
-				Options.TTL = ttl
+				options.TTL = ttl
 			}
 		}
 		// Ends up being the POST body from API Gateway.
-		Options.Value = []byte(m.Value)
+		options.Value = []byte(m.Value)
 
-		resp := commands.SetKey(Options)
-
-		// TODO: this is a little repetitive...
+		resp := commands.SetKey(options)
 
 		// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 		// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.

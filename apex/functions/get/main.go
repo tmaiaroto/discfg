@@ -5,6 +5,7 @@ import (
 	"github.com/apex/go-apex"
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
+	"github.com/tmaiaroto/discfg/version"
 	"os"
 	"time"
 )
@@ -21,12 +22,10 @@ type message struct {
 	TTL   string `json:"ttl"`
 	Key   string `json:"key"`
 	Value string `json:"value"`
+	Raw   string `json:"raw"`
 }
 
-// TODO: Put elsewhere. This is becoming problmatic.
-const Version = "0.6.0"
-
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: Version}
+var options = config.Options{StorageInterfaceName: "dynamodb", Version: version.Semantic}
 
 func main() {
 	// If not set for some reason, use us-east-1 by default.
@@ -41,24 +40,26 @@ func main() {
 			return nil, err
 		}
 
-		Options.Storage.AWS.Region = discfgDBRegion
+		options.Storage.AWS.Region = discfgDBRegion
 		// Each discfg API can be configured with a default table name.
-		Options.CfgName = discfgDBTable
+		options.CfgName = discfgDBTable
 		// Overwritten by the message passed to the Lambda.
 		if m.Name != "" {
-			Options.CfgName = m.Name
+			options.CfgName = m.Name
 		}
-		Options.Key = m.Key
+		options.Key = m.Key
 
-		resp := commands.GetKey(Options)
-
-		// TODO: this is a little repetitive...
+		resp := commands.GetKey(options)
 
 		// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 		// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
 		if resp.Node.TTL > 0 {
 			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
 		}
+
+		// If a "raw" querystring key is passed to the API, with any value, it will return just the data
+		// instead of a JSON response with other values.
+		// TODO
 
 		return commands.FormatJsonValue(resp), nil
 	})

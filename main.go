@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tmaiaroto/discfg/commands"
 	"github.com/tmaiaroto/discfg/config"
+	"github.com/tmaiaroto/discfg/version"
 	"io/ioutil"
 	"os"
 	"time"
@@ -16,9 +17,7 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
-const Version = "0.6.0"
-
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: Version}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: version.Semantic}
 
 var DataFile = ""
 

@@ -5,10 +5,11 @@ import (
 	"github.com/labstack/echo"
 	mw "github.com/labstack/echo/middleware"
 	"github.com/tmaiaroto/discfg/config"
+	"github.com/tmaiaroto/discfg/version"
 	"log"
 )
 
-var Options = config.Options{StorageInterfaceName: "dynamodb", Version: "0.6.0"}
+var Options = config.Options{StorageInterfaceName: "dynamodb", Version: version.Semantic}
 
 func main() {
 	// TODO: remove
