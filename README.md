@@ -6,7 +6,7 @@ A serverless and distributed configuration service built on top of Amazon Web Se
 it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
 
 It can install to your system as a binary, so managing configuration from any machine is simple from 
-a command line. You can also work with configurations via a RESTful API.
+a command line. You can also work with configurations via RESTful API.
 
 ### Command Line Interface
 
