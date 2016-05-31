@@ -10,7 +10,7 @@ import (
 	//"net/http"
 )
 
-// A shipper can send information into a database or log etc. While DynamoDB is the planned data store,
+// Shipper can send information into a database or log etc. While DynamoDB is the planned data store,
 // who knows what will happen in the future. A simple interface never hurts.
 type Shipper interface {
 	CreateConfig(config.Options, map[string]interface{}) (bool, interface{}, error)
@@ -23,7 +23,7 @@ type Shipper interface {
 	UpdateConfigVersion(config.Options) bool
 }
 
-// Standard shipper result contains errors and other information.
+// ShipperResult contains errors and other information.
 type ShipperResult struct {
 	Interface string `json:"interface"`
 	Error     error  `json:"error"`
@@ -34,7 +34,7 @@ var shippers = map[string]Shipper{
 	"dynamodb": ddb.DynamoDB{},
 }
 
-// Creates a new configuration returning success true/false along with any response and error.
+// CreateConfig creates a new configuration returning success true/false along with any response and error.
 func CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
@@ -45,7 +45,7 @@ func CreateConfig(opts config.Options, settings map[string]interface{}) (bool, i
 	return false, nil, err
 }
 
-// Deletes an existing configuration
+// DeleteConfig deletes an existing configuration
 func DeleteConfig(opts config.Options) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
@@ -56,7 +56,7 @@ func DeleteConfig(opts config.Options) (bool, interface{}, error) {
 	return false, nil, err
 }
 
-// Updates the options/settings for a configuration (may not be implementd by each interface)
+// UpdateConfig updates the options/settings for a configuration (may not be implementd by each interface)
 func UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
@@ -67,16 +67,16 @@ func UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, i
 	return false, nil, err
 }
 
-// Returns the config state (just a simple string message, could be "ACTIVE" for example)
-// TODO: May get more elaborate and have codes for this too, but will probably always have a string message
+// ConfigState returns the config state (just a simple string message, could be "ACTIVE" for example)
 func ConfigState(opts config.Options) string {
+	// TODO: May get more elaborate and have codes for this too, but will probably always have a string message
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.ConfigState(opts)
 	}
 	return ""
 }
 
-// Updates a key value in the configuration
+// Update a key value in the configuration
 func Update(opts config.Options) (bool, config.Node, error) {
 	var err error
 	var node config.Node
@@ -90,7 +90,7 @@ func Update(opts config.Options) (bool, config.Node, error) {
 	return false, node, err
 }
 
-// Gets a key value in the configuration
+// Get a key value in the configuration
 func Get(opts config.Options) (bool, config.Node, error) {
 	var err error
 	var node config.Node
@@ -102,7 +102,7 @@ func Get(opts config.Options) (bool, config.Node, error) {
 	return false, node, err
 }
 
-// Deletes a key value in the configuration
+// Delete a key value in the configuration
 func Delete(opts config.Options) (bool, config.Node, error) {
 	var err error
 	var node config.Node
@@ -117,7 +117,7 @@ func Delete(opts config.Options) (bool, config.Node, error) {
 	return false, node, err
 }
 
-// Updates the global discfg config version and modified timestamp (on the root key "/")
+// UpdateConfigVersion updates the global discfg config version and modified timestamp (on the root key "/")
 func UpdateConfigVersion(opts config.Options) bool {
 	// Technically, this modified timestamp won't be accurate. The config would have changed already by this point.
 	// TODO: Perhaps pass a timestamp to this function to get a little closer

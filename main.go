@@ -17,10 +17,13 @@ import (
 var _ time.Duration
 var _ bytes.Buffer
 
+// Options for the configuration
 var Options = config.Options{StorageInterfaceName: "dynamodb", Version: version.Semantic}
 
-var DataFile = ""
+// dataFile for loading data for a key from file using the CLI
+var dataFile = ""
 
+// DiscfgCmd defines the parent discfg command
 var DiscfgCmd = &cobra.Command{
 	Use:   "discfg",
 	Short: "discfg is a distributed configuration service",
@@ -30,7 +33,7 @@ var DiscfgCmd = &cobra.Command{
 	},
 }
 
-//
+// versionCmd displays the discfg version
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "discfg version number",
@@ -197,7 +200,7 @@ func main() {
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 
 	// Additional options by some operations
-	DiscfgCmd.PersistentFlags().StringVarP(&DataFile, "data", "d", "", "Data file to read for value")
+	DiscfgCmd.PersistentFlags().StringVarP(&dataFile, "data", "d", "", "Data file to read for value")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.ConditionalValue, "condition", "c", "", "Conditional operation value")
 	DiscfgCmd.PersistentFlags().Int64VarP(&Options.TTL, "ttl", "t", 0, "Set a time to live for a key (0 is no TTL)")
 
@@ -236,8 +239,8 @@ func setOptsFromArgs(args []string) config.Options {
 
 	// A data file will overwrite Options.Value, even if set. Prefer the data file (if it can be read)
 	// if both a value command line argument and a file path are specified.
-	if DataFile != "" {
-		b, err := ioutil.ReadFile(DataFile)
+	if dataFile != "" {
+		b, err := ioutil.ReadFile(dataFile)
 		if err == nil {
 			o.Value = b
 		}

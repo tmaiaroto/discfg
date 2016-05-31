@@ -16,8 +16,13 @@ import (
 
 // TODO: Change NotEnoughArgsMsg and use config/status.go instead to centralize the error codes and messages.
 
+// NotEnoughArgsMsg
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
+
+// ValueRequired
 const ValueRequired = "A value is required. Run 'discfg help' for usage."
+
+// DiscfgFileName
 const DiscfgFileName = ".discfg"
 
 // Out formats a config.ResponseObject for suitable output
