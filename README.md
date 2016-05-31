@@ -1,8 +1,7 @@
 # Distributed Config (discfg)
+<img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png" width="200" align="middle"/>
 
 **NOTE** This project is under active development and is not considered production ready.
-
-------
 
 A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
 it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
