@@ -87,14 +87,14 @@ the default provided.
 
 You'll of course prepend these URL paths with your AWS API Gateway API's base URL.
 
-**POST /{name}/keys/{key}**
+**PUT /{name}/keys/{key}**
 
 Body
 ```
 any value
 ```
 
-Would set the provided value from he POST body for the config name and key name passed
+Would set the provided value from he PUT body for the config name and key name passed
 in the API endpoint path parameters. There would then be a JSON response.
 
 **GET /{name}/keys/{key}**
@@ -103,7 +103,7 @@ Would get the key value for the given key name and config name passed in the API
 path parameters. The response would be a JSON message.
 
 
-**POST /cfg/create/{name}**
+**PUT /{name}/cfg**
 
 Body
 ```
@@ -111,7 +111,7 @@ Body
 ```
 
 Would create a table in DynamoDB with the provided name in the API endpoint path and would
-also configure it with the given settings from the POST body. In the case of DynamoDB these 
+also configure it with the given settings from the PUT body. In the case of DynamoDB these 
 setings are the read and write capacity units (by default 1 write and 2 read).
 
 

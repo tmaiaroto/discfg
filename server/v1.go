@@ -15,13 +15,14 @@ import (
 
 // Set the routes for V1 API
 func v1Routes(e *echo.Echo) {
-	e.Put("/v1/:name/key/:key", v1SetKey)
-	e.Get("/v1/:name/key/:key", v1GetKey)
-	e.Delete("/v1/:name/key/:key", v1DeleteKey)
+	e.Put("/v1/:name/keys/:key", v1SetKey)
+	e.Get("/v1/:name/keys/:key", v1GetKey)
+	e.Delete("/v1/:name/keys/:key", v1DeleteKey)
 
-	e.Put("/v1/cfg/:name", v1CreateCfg)
-	e.Delete("/v1/cfg/:name", v1DeleteCfg)
-	e.Options("/v1/cfg/:name", v1OptionsCfg)
+	e.Put("/v1/:name/cfg", v1CreateCfg)
+	e.Delete("/v1/:name/cfg", v1DeleteCfg)
+	e.Patch("/v1/:name/cfg", v1PatchCfg)
+	e.Options("/v1/:name/cfg", v1OptionsCfg)
 }
 
 // Gets a key from discfg
@@ -134,8 +135,8 @@ func v1DeleteCfg(c *echo.Context) error {
 	return c.JSON(http.StatusOK, commands.DeleteCfg(Options))
 }
 
-// Gets/sets options for a configuration
-func v1OptionsCfg(c *echo.Context) error {
+// Sets options for a configuration
+func v1PatchCfg(c *echo.Context) error {
 	Options.CfgName = c.Param("name")
 	resp := config.ResponseObject{
 		Action: "info",
@@ -147,6 +148,7 @@ func v1OptionsCfg(c *echo.Context) error {
 		resp.Error = err.Error()
 		resp.Message = "Something went wrong reading the body of the request."
 		// resp.ErrorCode = 500 <-- TODO
+		return c.JSON(http.StatusOK, resp)
 	} else if len(b) > 0 {
 		resp := config.ResponseObject{
 			Action: "update cfg",
@@ -157,7 +159,15 @@ func v1OptionsCfg(c *echo.Context) error {
 			resp.Message = "Something went wrong reading the body of the request."
 			return c.JSON(http.StatusOK, resp)
 		}
-		return c.JSON(http.StatusOK, commands.UpdateCfg(Options, settings))
+	}
+
+	return c.JSON(http.StatusOK, commands.UpdateCfg(Options, settings))
+}
+
+func v1OptionsCfg(c *echo.Context) error {
+	Options.CfgName = c.Param("name")
+	resp := config.ResponseObject{
+		Action: "info",
 	}
 
 	return c.JSON(http.StatusOK, commands.Info(Options))
