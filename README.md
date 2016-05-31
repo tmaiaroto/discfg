@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png" width="200" align="middle"/>
+<img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png?a" width="200" align="middle"/>
 
 ## Distributed Config (discfg)
 
