@@ -1,14 +1,14 @@
-<img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png?a" width="300" align="middle" alt="Distributed Config (discfg)" />
+<img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png?a" width="350" align="middle" alt="Distributed Config (discfg)" />
 
 **NOTE** This project is under active development and is not considered production ready.
 
 A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
 it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
 
-It can install to your system as a binary, so managing configuration from any machine is simple from
-a command line.
+It can install to your system as a binary, so managing configuration from any machine is simple from 
+a command line. You can also work with configurations via a RESTful API.
 
-### Quick Example Usage
+### Command Line Interface
 
 Assuming you built the binary to ```discfg``` and you have your AWS credentials under ```~/.aws``` 
 because you've used the AWS CLI tool before and configured them...
