@@ -1,3 +1,4 @@
+// Package storage contains the very important Shipper interface which is responsible for working with storage engines.
 package storage
 
 import (

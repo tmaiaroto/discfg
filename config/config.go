@@ -1,4 +1,4 @@
-// Defines various structures including the configuration.
+// Package config defines various structures including the configuration.
 package config
 
 import (
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// All of the configuration options needed by various functions (set by CLI commands, config files, other code, etc.)
+// Options needed by various functions (set by CLI commands, config files, other code, etc.)
 type Options struct {
 	CfgName              string
 	ConditionalValue     string
@@ -23,6 +23,7 @@ type Options struct {
 	OutputFormat string
 }
 
+// AWS credentials and options
 type AWS struct {
 	Region          string
 	AccessKeyId     string
@@ -31,7 +32,7 @@ type AWS struct {
 	CredProfile     string
 }
 
-// The response for output.
+// ResponseObject for output
 type ResponseObject struct {
 	Action string `json:"action"`
 	//Node          Node     `json:"node,omitempty"`
@@ -96,6 +97,8 @@ type ResponseObject struct {
 // Value will be an interface{}, but stored as []byte in DynamoDB.
 // Other storage engines may convert to something else.
 // For now, all data is coming in as string. Either from the terminal or a RESTful API.
+
+// Node defines the data structure around a key and its state
 type Node struct {
 	Version int64  `json:"version,omitempty"`
 	Key     string `json:"key,omitempty"`

@@ -1,4 +1,4 @@
-// Command functions
+// Package commands contains functions to work with a discfg configuration from a high level.
 package commands
 
 import (
@@ -11,7 +11,7 @@ import (
 	// "log"
 )
 
-// Creates a new configuration
+// CreateCfg creates a new configuration
 func CreateCfg(opts config.Options, settings map[string]interface{}) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "create cfg",
@@ -33,7 +33,7 @@ func CreateCfg(opts config.Options, settings map[string]interface{}) config.Resp
 	return resp
 }
 
-// Deletes a configuration
+// DeleteCfg deletes a configuration
 func DeleteCfg(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "delete cfg",
@@ -55,7 +55,7 @@ func DeleteCfg(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Updates a configuration's options/settings (if applicable, depends on the interface)
+// UpdateCfg updates a configuration's options/settings (if applicable, depends on the interface)
 func UpdateCfg(opts config.Options, settings map[string]interface{}) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "update cfg",
@@ -78,7 +78,7 @@ func UpdateCfg(opts config.Options, settings map[string]interface{}) config.Resp
 	return resp
 }
 
-// Sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
+// Use sets a discfg configuration to use for all future commands until unset (it is optional, but conveniently saves a CLI argument - kinda like MongoDB's use)
 func Use(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "use",
@@ -98,7 +98,7 @@ func Use(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Shows which discfg configuration is currently active for use
+// Which shows which discfg configuration is currently active for use
 func Which(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "which",
@@ -113,7 +113,7 @@ func Which(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Sets a key value for a given configuration
+// SetKey sets a key value for a given configuration
 func SetKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "set",
@@ -154,7 +154,7 @@ func SetKey(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Gets a key
+// GetKey gets a key from a configuration
 func GetKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "get",
@@ -175,7 +175,7 @@ func GetKey(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Deletes a key
+// DeleteKey deletes a key from a configuration
 func DeleteKey(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "delete",
@@ -204,7 +204,7 @@ func DeleteKey(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Information about the configuration including global version/state and modified time
+// Info about the configuration including global version/state and modified time
 func Info(opts config.Options) config.ResponseObject {
 	resp := config.ResponseObject{
 		Action: "info",
@@ -255,7 +255,7 @@ func Info(opts config.Options) config.ResponseObject {
 	return resp
 }
 
-// Exports a discfg to file in JSON format
+// Export a discfg to file in JSON format
 func Export(opts config.Options, args []string) {
 	// TODO
 }

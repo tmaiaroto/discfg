@@ -327,7 +327,7 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 	} else {
 		if len(response.Items) > 0 {
 			success = true
-			// Every field should now be checked because it's possible to have a response without a value or verison.
+			// Every field should now be checked because it's possible to have a response without a value or version.
 			// For example, the root key "/" may only hold information about the config version and modified time.
 			// It may not have a set value and therefore it also won't have a relative version either.
 			// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...

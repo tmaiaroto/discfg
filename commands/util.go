@@ -1,4 +1,4 @@
-// Various utilities used by commands are found in this file as well as response structs, constants, etc.
+// Package commands utilities and response structs, constants, etc.
 package commands
 
 import (
@@ -14,12 +14,13 @@ import (
 	"time"
 )
 
-// TODO: Change this and use config/status.go instead
+// TODO: Change NotEnoughArgsMsg and use config/status.go instead to centralize the error codes and messages.
+
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
 const ValueRequired = "A value is required. Run 'discfg help' for usage."
 const DiscfgFileName = ".discfg"
 
-// Output
+// Out formats a config.ResponseObject for suitable output
 func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject {
 	// We've stored everything as binary data. But that can be many things.
 	// A string, a number, or even JSON. We can check to see if it's something we can marshal to JSON.
@@ -103,7 +104,7 @@ func successLabel(message string) {
 	fmt.Println("")
 }
 
-// Just returns the name of the set discfg name (TODO: will need to change as .discfg gets more complex).
+// GetDiscfgNameFromFile simply returns the name of the set discfg name (TODO: will need to change as .discfg gets more complex).
 func GetDiscfgNameFromFile() string {
 	name := ""
 	currentCfg, err := ioutil.ReadFile(DiscfgFileName)
@@ -163,7 +164,7 @@ func isJSON(s string) bool {
 
 }
 
-// Sets the Node Value (an interface{}) as a map[string]interface{} (from []byte which is how it's stored - at least for now)
+// FormatJsonValue sets the Node Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
 // so that it can be converted to JSON in an HTTP response. If it can't be represented in a map, then it'll be set as a string.
 // For example, a string was set as the value, we can still represent that in JSON. However, if an image was stored...Then it's
 // going to look ugly. It won't be a base64 string, it'll be the string representation of the binary data. Which apparently Chrome

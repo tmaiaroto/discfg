@@ -27,9 +27,9 @@ func v1Routes(e *echo.Echo) {
 
 // Gets a key from discfg
 func v1GetKey(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
-	Options.Key = c.Param("key")
-	resp := commands.GetKey(Options)
+	options.CfgName = c.Param("name")
+	options.Key = c.Param("key")
+	resp := commands.GetKey(options)
 	// Since this option is not needed for anything else, it's not held on the Options struct.
 	contentType := c.Query("type")
 
@@ -58,14 +58,14 @@ func v1GetKey(c *echo.Context) error {
 
 // Sets a key in discfg
 func v1SetKey(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
-	Options.Key = c.Param("key")
+	options.CfgName = c.Param("name")
+	options.Key = c.Param("key")
 	resp := config.ResponseObject{
 		Action: "set",
 	}
 
 	// Allow the value to be passed via querystring param.
-	Options.Value = []byte(c.Query("value"))
+	options.Value = []byte(c.Query("value"))
 
 	// Overwrite that if the request body passes a value that can be read, preferring that.
 	b, err := ioutil.ReadAll(c.Request().Body)
@@ -85,24 +85,24 @@ func v1SetKey(c *echo.Context) error {
 		//	Or maybe return an HTTP status message... This is outside discfg's concern. It's not an error message/code
 		//	that would ever be seen from the CLI, right? Or maybe it would. Maybe a more generic, "error parsing key value" ...
 	} else if len(b) > 0 {
-		Options.Value = b
+		options.Value = b
 	}
 
-	resp = commands.SetKey(Options)
+	resp = commands.SetKey(options)
 
 	return c.JSON(http.StatusOK, resp)
 }
 
 // Deletes a key in discfg
 func v1DeleteKey(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
-	Options.Key = c.Param("key")
-	return c.JSON(http.StatusOK, commands.DeleteKey(Options))
+	options.CfgName = c.Param("name")
+	options.Key = c.Param("key")
+	return c.JSON(http.StatusOK, commands.DeleteKey(options))
 }
 
 // Creates a new configuration
 func v1CreateCfg(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
+	options.CfgName = c.Param("name")
 	resp := config.ResponseObject{
 		Action: "create cfg",
 	}
@@ -118,7 +118,7 @@ func v1CreateCfg(c *echo.Context) error {
 		resp := config.ResponseObject{
 			Action: "create cfg",
 		}
-		//Options.Value = b
+		//options.Value = b
 		if err := json.Unmarshal(b, &settings); err != nil {
 			resp.Error = err.Error()
 			resp.Message = "Something went wrong reading the body of the request."
@@ -126,18 +126,18 @@ func v1CreateCfg(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, commands.CreateCfg(Options, settings))
+	return c.JSON(http.StatusOK, commands.CreateCfg(options, settings))
 }
 
 // Deletes a configuration
 func v1DeleteCfg(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
-	return c.JSON(http.StatusOK, commands.DeleteCfg(Options))
+	options.CfgName = c.Param("name")
+	return c.JSON(http.StatusOK, commands.DeleteCfg(options))
 }
 
 // Sets options for a configuration
 func v1PatchCfg(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
+	options.CfgName = c.Param("name")
 	resp := config.ResponseObject{
 		Action: "info",
 	}
@@ -153,7 +153,7 @@ func v1PatchCfg(c *echo.Context) error {
 		resp := config.ResponseObject{
 			Action: "update cfg",
 		}
-		//Options.Value = b
+		//options.Value = b
 		if err := json.Unmarshal(b, &settings); err != nil {
 			resp.Error = err.Error()
 			resp.Message = "Something went wrong reading the body of the request."
@@ -161,14 +161,14 @@ func v1PatchCfg(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, commands.UpdateCfg(Options, settings))
+	return c.JSON(http.StatusOK, commands.UpdateCfg(options, settings))
 }
 
 func v1OptionsCfg(c *echo.Context) error {
-	Options.CfgName = c.Param("name")
-	resp := config.ResponseObject{
-		Action: "info",
-	}
+	options.CfgName = c.Param("name")
+	// resp := config.ResponseObject{
+	// 	Action: "info",
+	// }
 
-	return c.JSON(http.StatusOK, commands.Info(Options))
+	return c.JSON(http.StatusOK, commands.Info(options))
 }
