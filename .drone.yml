@@ -1,0 +1,8 @@
+image: golang:1.6
+env:
+  - GOPATH=/var/cache/drone
+script:
+  - go version
+  - go get
+  - go build
+  - go test -v
