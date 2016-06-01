@@ -2,7 +2,8 @@
 
 [![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)]() [![godoc discfg](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/discfg) [![goreport discfg](https://goreportcard.com/badge/github.com/tmaiaroto/discfg)](https://goreportcard.com/report/github.com/tmaiaroto/discfg) 
 
-_**NOTE** This project is under active development and is not considered production ready._
+_**NOTE** This project is under active development and is not considered production ready._ 
+Feedback very much appreciated.
 
 A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
 it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
