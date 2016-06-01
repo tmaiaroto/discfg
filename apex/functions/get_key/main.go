@@ -57,10 +57,6 @@ func main() {
 			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
 		}
 
-		// If a "raw" querystring key is passed to the API, with any value, it will return just the data
-		// instead of a JSON response with other values.
-		// TODO
-
 		return commands.FormatJSONValue(resp), nil
 	})
 }
