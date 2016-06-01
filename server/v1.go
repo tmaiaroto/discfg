@@ -1,6 +1,5 @@
-// TODO: Echo has since had a major update, so all of this needs to be updated.
-// // API Version 1
-// package main
+// API Version 1
+package main
 
 // import (
 // 	"encoding/json"
