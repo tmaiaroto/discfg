@@ -5,7 +5,7 @@ import (
 	// "github.com/labstack/echo"
 	// mw "github.com/labstack/echo/middleware"
 	"github.com/tmaiaroto/discfg/config"
-	// "github.com/tmaiaroto/discfg/version"
+	"github.com/tmaiaroto/discfg/version"
 	"log"
 )
 
