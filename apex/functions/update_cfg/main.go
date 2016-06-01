@@ -49,6 +49,6 @@ func main() {
 
 		resp := commands.UpdateCfg(options, settings)
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

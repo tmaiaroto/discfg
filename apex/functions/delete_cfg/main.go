@@ -41,6 +41,6 @@ func main() {
 
 		resp := commands.DeleteCfg(options)
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

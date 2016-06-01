@@ -41,6 +41,6 @@ func main() {
 
 		resp := commands.Info(options)
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

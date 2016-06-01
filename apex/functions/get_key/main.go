@@ -61,6 +61,6 @@ func main() {
 		// instead of a JSON response with other values.
 		// TODO
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

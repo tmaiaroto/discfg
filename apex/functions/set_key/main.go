@@ -42,7 +42,7 @@ func main() {
 
 		options.Storage.AWS.Region = discfgDBRegion
 		// The following are set automatically.
-		// options.Storage.AWS.AccessKeyId = os.Getenv("AWS_ACCESS_KEY_ID")
+		// options.Storage.AWS.AccessKeyID = os.Getenv("AWS_ACCESS_KEY_ID")
 		// options.Storage.AWS.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		// options.Storage.AWS.SessionToken = os.Getenv("AWS_SESSION_TOKEN")
 
@@ -72,6 +72,6 @@ func main() {
 			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
 		}
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

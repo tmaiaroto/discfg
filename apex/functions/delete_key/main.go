@@ -50,6 +50,6 @@ func main() {
 
 		resp := commands.DeleteKey(options)
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

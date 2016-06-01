@@ -26,7 +26,7 @@ type Options struct {
 // AWS credentials and options
 type AWS struct {
 	Region          string
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	SessionToken    string
 	CredProfile     string

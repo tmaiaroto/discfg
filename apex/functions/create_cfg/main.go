@@ -49,6 +49,6 @@ func main() {
 
 		resp := commands.CreateCfg(options, settings)
 
-		return commands.FormatJsonValue(resp), nil
+		return commands.FormatJSONValue(resp), nil
 	})
 }

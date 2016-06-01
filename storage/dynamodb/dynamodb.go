@@ -14,11 +14,11 @@ import (
 	"time"
 )
 
-// Each shipper has a struct which implements the Shipper interface.
+// DynamoDB implements the Shipper interface.
 type DynamoDB struct {
 }
 
-// Configures DynamoDB service to use
+// Svc configures the DynamoDB service to use
 func Svc(opts config.Options) *dynamodb.DynamoDB {
 	awsConfig := &aws.Config{Region: aws.String(opts.Storage.AWS.Region)}
 
@@ -42,15 +42,15 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 	}
 
 	// If credentials were passed via config, then use those. They will take priority over other methods.
-	if opts.Storage.AWS.AccessKeyId != "" && opts.Storage.AWS.SecretAccessKey != "" {
-		creds = credentials.NewStaticCredentials(opts.Storage.AWS.AccessKeyId, opts.Storage.AWS.SecretAccessKey, "")
+	if opts.Storage.AWS.AccessKeyID != "" && opts.Storage.AWS.SecretAccessKey != "" {
+		creds = credentials.NewStaticCredentials(opts.Storage.AWS.AccessKeyID, opts.Storage.AWS.SecretAccessKey, "")
 	}
 	awsConfig.Credentials = creds
 
 	return dynamodb.New(session.New(awsConfig))
 }
 
-// Creates a new table for a configuration
+// CreateConfig creates a new table for a configuration
 func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
@@ -116,7 +116,7 @@ func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interfa
 	return success, response, err
 }
 
-// Deletes a configuration (removing the DynamoDB table and all data within it)
+// DeleteConfig deletes a configuration (removing the DynamoDB table and all data within it)
 func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) {
 	svc := Svc(opts)
 	success := false
@@ -132,7 +132,7 @@ func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) 
 	return success, response, err
 }
 
-// Updates a configuration (DyanmoDB can have its read and write capacity units adjusted as needed)
+// UpdateConfig updates a configuration (DyanmoDB can have its read and write capacity units adjusted as needed)
 // Note: Adjusting the read capacity is fast, adjusting write capacity takes longer.
 func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
 	svc := Svc(opts)
@@ -174,7 +174,7 @@ func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interfa
 	return success, response, err
 }
 
-// Returns the DynamoDB table state
+// ConfigState returns the DynamoDB table state
 func (db DynamoDB) ConfigState(opts config.Options) string {
 	svc := Svc(opts)
 
@@ -191,7 +191,7 @@ func (db DynamoDB) ConfigState(opts config.Options) string {
 	return *resp.Table.TableStatus
 }
 
-// Updates a key in DynamoDB
+// Update a key in DynamoDB
 func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	var err error
 	svc := Svc(opts)
@@ -286,7 +286,7 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 	return success, result, err
 }
 
-// Gets a key in DynamoDB
+// Get a key in DynamoDB
 func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 	var err error
 	svc := Svc(opts)
@@ -324,45 +324,45 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 		// Message from an error.
 		//fmt.Println(err.Error())
 		return success, result, err
-	} else {
-		if len(response.Items) > 0 {
-			success = true
-			// Every field should now be checked because it's possible to have a response without a value or version.
-			// For example, the root key "/" may only hold information about the config version and modified time.
-			// It may not have a set value and therefore it also won't have a relative version either.
-			// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...
-			// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
-			// For now, just check the existence of keys in the map.
-			if val, ok := response.Items[0]["value"]; ok {
-				result.Value = val.B
-			}
-			if val, ok := response.Items[0]["version"]; ok {
-				result.Version, _ = strconv.ParseInt(*val.N, 10, 64)
-			}
+	}
 
-			// Expiration/TTL (only set if > 0)
-			if val, ok := response.Items[0]["ttl"]; ok {
-				ttl, _ := strconv.ParseInt(*val.N, 10, 64)
-				if ttl > 0 {
-					result.TTL = ttl
-				}
-			}
-			if val, ok := response.Items[0]["expires"]; ok {
-				expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
-				if expiresNano > 0 {
-					result.Expiration = time.Unix(0, expiresNano)
-				}
-			}
+	if len(response.Items) > 0 {
+		success = true
+		// Every field should now be checked because it's possible to have a response without a value or version.
+		// For example, the root key "/" may only hold information about the config version and modified time.
+		// It may not have a set value and therefore it also won't have a relative version either.
+		// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...
+		// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
+		// For now, just check the existence of keys in the map.
+		if val, ok := response.Items[0]["value"]; ok {
+			result.Value = val.B
+		}
+		if val, ok := response.Items[0]["version"]; ok {
+			result.Version, _ = strconv.ParseInt(*val.N, 10, 64)
+		}
 
-			// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
-			// This is only returned for the root key. no sense in making a separate get function because operations like
-			// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
-			if val, ok := response.Items[0]["cfgVersion"]; ok {
-				result.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
+		// Expiration/TTL (only set if > 0)
+		if val, ok := response.Items[0]["ttl"]; ok {
+			ttl, _ := strconv.ParseInt(*val.N, 10, 64)
+			if ttl > 0 {
+				result.TTL = ttl
 			}
-			if val, ok := response.Items[0]["cfgModified"]; ok {
-				result.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
+		}
+		if val, ok := response.Items[0]["expires"]; ok {
+			expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
+			if expiresNano > 0 {
+				result.Expiration = time.Unix(0, expiresNano)
 			}
+		}
+
+		// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
+		// This is only returned for the root key. no sense in making a separate get function because operations like
+		// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
+		if val, ok := response.Items[0]["cfgVersion"]; ok {
+			result.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
+		}
+		if val, ok := response.Items[0]["cfgModified"]; ok {
+			result.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
 		}
 	}
 
@@ -422,7 +422,7 @@ func getChildren(svc *dynamodb.DynamoDB, opts config.Options) (bool, []config.No
 	return success, nodes, err
 }
 
-// Deletes a key in DynamoDB
+// Delete a key in DynamoDB
 func (db DynamoDB) Delete(opts config.Options) (bool, config.Node, error) {
 	var err error
 	svc := Svc(opts)
@@ -456,18 +456,18 @@ func (db DynamoDB) Delete(opts config.Options) (bool, config.Node, error) {
 	response, err := svc.DeleteItem(params)
 	if err != nil {
 		return success, result, err
-	} else {
-		success = true
-		if len(response.Attributes) > 0 {
-			result.Value = response.Attributes["value"].B
-			result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
-		}
+	}
+
+	success = true
+	if len(response.Attributes) > 0 {
+		result.Value = response.Attributes["value"].B
+		result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 	}
 
 	return success, result, err
 }
 
-// Updates the configuration's global version and modified timestamp (fields unique to the root key "/")
+// UpdateConfigVersion updates the configuration's global version and modified timestamp (fields unique to the root key "/")
 func (db DynamoDB) UpdateConfigVersion(opts config.Options) bool {
 	svc := Svc(opts)
 	success := false

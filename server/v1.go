@@ -46,10 +46,10 @@ func v1GetKey(c *echo.Context) error {
 	//case "jsonp":
 	//break
 	case "json", "application/json":
-		resp = commands.FormatJsonValue(resp)
+		resp = commands.FormatJSONValue(resp)
 		break
 	default:
-		resp = commands.FormatJsonValue(resp)
+		resp = commands.FormatJSONValue(resp)
 		break
 	}
 	// default response

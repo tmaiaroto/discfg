@@ -195,7 +195,7 @@ func main() {
 
 	// AWS options & credentials
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.Region, "region", "l", "us-east-1", "AWS Region to use")
-	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.AccessKeyId, "keyId", "k", "", "AWS Access Key ID")
+	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.AccessKeyID, "keyId", "k", "", "AWS Access Key ID")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.SecretAccessKey, "secretKey", "s", "", "AWS Secret Access Key")
 	DiscfgCmd.PersistentFlags().StringVarP(&Options.Storage.AWS.CredProfile, "credProfile", "p", "", "AWS Credentials Profile to use")
 

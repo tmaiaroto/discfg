@@ -16,13 +16,13 @@ import (
 
 // TODO: Change NotEnoughArgsMsg and use config/status.go instead to centralize the error codes and messages.
 
-// NotEnoughArgsMsg
+// NotEnoughArgsMsg defines a message for input validation
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
 
-// ValueRequired
+// ValueRequired defines a message for input validation
 const ValueRequired = "A value is required. Run 'discfg help' for usage."
 
-// DiscfgFileName
+// DiscfgFileName defines the temporary filename used to hold the current working config name
 const DiscfgFileName = ".discfg"
 
 // Out formats a config.ResponseObject for suitable output
@@ -169,13 +169,13 @@ func isJSON(s string) bool {
 
 }
 
-// FormatJsonValue sets the Node Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
+// FormatJSONValue sets the Node Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
 // so that it can be converted to JSON in an HTTP response. If it can't be represented in a map, then it'll be set as a string.
 // For example, a string was set as the value, we can still represent that in JSON. However, if an image was stored...Then it's
 // going to look ugly. It won't be a base64 string, it'll be the string representation of the binary data. Which apparently Chrome
 // will render if given...But still. Not so hot. The user should know what they are setting and getting though and this should
 // still technically return JSON with a usable value. Valid JSON at that. Just with some funny looking characters =)
-func FormatJsonValue(resp config.ResponseObject) config.ResponseObject {
+func FormatJSONValue(resp config.ResponseObject) config.ResponseObject {
 	// Don't attempt to Unmarshal or anything if the Value is empty. We wouldn't want to create a panic now.
 	if resp.Node.Value == nil {
 		return resp

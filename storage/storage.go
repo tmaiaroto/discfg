@@ -36,35 +36,26 @@ var shippers = map[string]Shipper{
 
 // CreateConfig creates a new configuration returning success true/false along with any response and error.
 func CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
-	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.CreateConfig(opts, settings)
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, nil, err
+	return false, nil, errors.New("Invalid shipper interface.")
 }
 
 // DeleteConfig deletes an existing configuration
 func DeleteConfig(opts config.Options) (bool, interface{}, error) {
-	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.DeleteConfig(opts)
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, nil, err
+	return false, nil, errors.New("Invalid shipper interface.")
 }
 
 // UpdateConfig updates the options/settings for a configuration (may not be implementd by each interface)
 func UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
-	var err error
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.UpdateConfig(opts, settings)
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, nil, err
+	return false, nil, errors.New("Invalid shipper interface.")
 }
 
 // ConfigState returns the config state (just a simple string message, could be "ACTIVE" for example)
@@ -78,43 +69,33 @@ func ConfigState(opts config.Options) string {
 
 // Update a key value in the configuration
 func Update(opts config.Options) (bool, config.Node, error) {
-	var err error
 	var node config.Node
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		if UpdateConfigVersion(opts) {
 			return s.Update(opts)
 		}
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, node, err
+	return false, node, errors.New("Invalid shipper interface.")
 }
 
 // Get a key value in the configuration
 func Get(opts config.Options) (bool, config.Node, error) {
-	var err error
 	var node config.Node
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.Get(opts)
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, node, err
+	return false, node, errors.New("Invalid shipper interface.")
 }
 
 // Delete a key value in the configuration
 func Delete(opts config.Options) (bool, config.Node, error) {
-	var err error
 	var node config.Node
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		if UpdateConfigVersion(opts) {
 			return s.Delete(opts)
 		}
-
-	} else {
-		err = errors.New("Invalid shipper interface.")
 	}
-	return false, node, err
+	return false, node, errors.New("Invalid shipper interface.")
 }
 
 // UpdateConfigVersion updates the global discfg config version and modified timestamp (on the root key "/")
