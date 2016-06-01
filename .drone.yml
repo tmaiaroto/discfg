@@ -1,4 +1,4 @@
-image: golang:1.6
+image: go1.6
 env:
   - GOPATH=/var/cache/drone
 script:
