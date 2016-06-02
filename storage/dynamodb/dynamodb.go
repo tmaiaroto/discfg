@@ -51,9 +51,8 @@ func Svc(opts config.Options) *dynamodb.DynamoDB {
 }
 
 // CreateConfig creates a new table for a configuration
-func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
+func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interface{}) (interface{}, error) {
 	svc := Svc(opts)
-	success := false
 	wu := int64(1)
 	ru := int64(2)
 	if val, ok := settings["WriteCapacityUnits"]; ok {
@@ -107,36 +106,29 @@ func (db DynamoDB) CreateConfig(opts config.Options, settings map[string]interfa
 
 	}
 	response, err := svc.CreateTable(params)
-	if err == nil {
-		tableStatus := *response.TableDescription.TableStatus
-		if tableStatus == "CREATING" || tableStatus == "ACTIVE" {
-			success = true
-		}
-	}
-	return success, response, err
+	// TODO: Convey this somehow?
+	// if err == nil {
+	// tableStatus := *response.TableDescription.TableStatus
+	// if tableStatus != "CREATING" && tableStatus != "ACTIVE" {
+	// 	err = errors.New("Something went wrong creating tables")
+	// }
+	// }
+	return response, err
 }
 
 // DeleteConfig deletes a configuration (removing the DynamoDB table and all data within it)
-func (db DynamoDB) DeleteConfig(opts config.Options) (bool, interface{}, error) {
+func (db DynamoDB) DeleteConfig(opts config.Options) (interface{}, error) {
 	svc := Svc(opts)
-	success := false
-
 	params := &dynamodb.DeleteTableInput{
 		TableName: aws.String(opts.CfgName), // Required
 	}
-	response, err := svc.DeleteTable(params)
-	if err == nil {
-		success = true
-	}
-
-	return success, response, err
+	return svc.DeleteTable(params)
 }
 
 // UpdateConfig updates a configuration (DyanmoDB can have its read and write capacity units adjusted as needed)
 // Note: Adjusting the read capacity is fast, adjusting write capacity takes longer.
-func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (bool, interface{}, error) {
+func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interface{}) (interface{}, error) {
 	svc := Svc(opts)
-	success := false
 	wu := int64(1)
 	ru := int64(2)
 	if val, ok := settings["WriteCapacityUnits"]; ok {
@@ -166,17 +158,13 @@ func (db DynamoDB) UpdateConfig(opts config.Options, settings map[string]interfa
 		// 	StreamViewType: aws.String("StreamViewType"),
 		// },
 	}
-	response, err := svc.UpdateTable(params)
-	if err == nil {
-		success = true
-	}
-
-	return success, response, err
+	return svc.UpdateTable(params)
 }
 
 // ConfigState returns the DynamoDB table state
-func (db DynamoDB) ConfigState(opts config.Options) string {
+func (db DynamoDB) ConfigState(opts config.Options) (string, error) {
 	svc := Svc(opts)
+	status := ""
 
 	params := &dynamodb.DescribeTableInput{
 		TableName: aws.String(opts.CfgName), // Required
@@ -186,17 +174,16 @@ func (db DynamoDB) ConfigState(opts config.Options) string {
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		//fmt.Println(err.Error())
-		return ""
+		status = *resp.Table.TableStatus
 	}
-	return *resp.Table.TableStatus
+	return status, err
 }
 
 // Update a key in DynamoDB
-func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
+func (db DynamoDB) Update(opts config.Options) (config.Node, error) {
 	var err error
 	svc := Svc(opts)
-	success := false
-	result := config.Node{Key: opts.Key}
+	node := config.Node{Key: opts.Key}
 
 	// log.Println("Setting on table name: " + name)
 	// log.Println(opts.Key)
@@ -274,24 +261,21 @@ func (db DynamoDB) Update(opts config.Options) (bool, config.Node, error) {
 
 	response, err := svc.UpdateItem(params)
 	if err == nil {
-		success = true
+		// The old values
+		if val, ok := response.Attributes["value"]; ok {
+			node.Value = val.B
+			node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
+		}
 	}
 
-	// The old values
-	if val, ok := response.Attributes["value"]; ok {
-		result.Value = val.B
-		result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
-	}
-
-	return success, result, err
+	return node, err
 }
 
 // Get a key in DynamoDB
-func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
+func (db DynamoDB) Get(opts config.Options) (config.Node, error) {
 	var err error
 	svc := Svc(opts)
-	success := false
-	result := config.Node{Key: opts.Key}
+	node := config.Node{Key: opts.Key}
 
 	params := &dynamodb.QueryInput{
 		TableName: aws.String(opts.CfgName),
@@ -323,73 +307,64 @@ func (db DynamoDB) Get(opts config.Options) (bool, config.Node, error) {
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		//fmt.Println(err.Error())
-		return success, result, err
-	}
 
-	if len(response.Items) > 0 {
-		success = true
-		// Every field should now be checked because it's possible to have a response without a value or version.
-		// For example, the root key "/" may only hold information about the config version and modified time.
-		// It may not have a set value and therefore it also won't have a relative version either.
-		// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...
-		// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
-		// For now, just check the existence of keys in the map.
-		if val, ok := response.Items[0]["value"]; ok {
-			result.Value = val.B
-		}
-		if val, ok := response.Items[0]["version"]; ok {
-			result.Version, _ = strconv.ParseInt(*val.N, 10, 64)
-		}
+		if len(response.Items) > 0 {
+			// Every field should now be checked because it's possible to have a response without a value or version.
+			// For example, the root key "/" may only hold information about the config version and modified time.
+			// It may not have a set value and therefore it also won't have a relative version either.
+			// TODO: Maybe it should? We can always version it as 1 even if empty value. Perhaps also an empty string value...
+			// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
+			// For now, just check the existence of keys in the map.
+			if val, ok := response.Items[0]["value"]; ok {
+				node.Value = val.B
+			}
+			if val, ok := response.Items[0]["version"]; ok {
+				node.Version, _ = strconv.ParseInt(*val.N, 10, 64)
+			}
 
-		// Expiration/TTL (only set if > 0)
-		if val, ok := response.Items[0]["ttl"]; ok {
-			ttl, _ := strconv.ParseInt(*val.N, 10, 64)
-			if ttl > 0 {
-				result.TTL = ttl
+			// Expiration/TTL (only set if > 0)
+			if val, ok := response.Items[0]["ttl"]; ok {
+				ttl, _ := strconv.ParseInt(*val.N, 10, 64)
+				if ttl > 0 {
+					node.TTL = ttl
+				}
+			}
+			if val, ok := response.Items[0]["expires"]; ok {
+				expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
+				if expiresNano > 0 {
+					node.Expiration = time.Unix(0, expiresNano)
+				}
+			}
+
+			// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
+			// This is only returned for the root key. no sense in making a separate get function because operations like
+			// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
+			if val, ok := response.Items[0]["cfgVersion"]; ok {
+				node.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
+			}
+			if val, ok := response.Items[0]["cfgModified"]; ok {
+				node.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
 		}
-		if val, ok := response.Items[0]["expires"]; ok {
-			expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
-			if expiresNano > 0 {
-				result.Expiration = time.Unix(0, expiresNano)
+
+		// Check the TTL
+		if node.TTL > 0 {
+			// If expired, return an empty node
+			if node.Expiration.UnixNano() < time.Now().UnixNano() {
+				node = config.Node{Key: opts.Key}
+				// Delete the now expired item
+				// NOTE: This does mean waiting on another DynamoDB request and that technically means slower performance in these situations, but is it a conern?
+				// A goroutine doesn't help because there's not guarantee there's time for it to complete.
+				db.Delete(opts)
 			}
 		}
-
-		// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
-		// This is only returned for the root key. no sense in making a separate get function because operations like
-		// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
-		if val, ok := response.Items[0]["cfgVersion"]; ok {
-			result.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
-		}
-		if val, ok := response.Items[0]["cfgModified"]; ok {
-			result.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
-		}
 	}
 
-	// Check the TTL
-	if result.TTL > 0 {
-		// If expired, return an empty result
-		if result.Expiration.UnixNano() < time.Now().UnixNano() {
-			result = config.Node{Key: opts.Key}
-			success = false
-			// Delete the now expired item
-			// NOTE: This does mean waiting on another DynamoDB request and that technically means slower performance in these situations, but is it a conern?
-			// A goroutine doesn't help because there's not guarantee there's time for it to complete.
-			db.Delete(opts)
-		}
-	}
-
-	// Get children
-	if opts.Recursive {
-
-	}
-
-	return success, result, err
+	return node, err
 }
 
-func getChildren(svc *dynamodb.DynamoDB, opts config.Options) (bool, []config.Node, error) {
+func getChildren(svc *dynamodb.DynamoDB, opts config.Options) ([]config.Node, error) {
 	var err error
-	success := false
 	nodes := []config.Node{}
 
 	// TODO
@@ -419,15 +394,14 @@ func getChildren(svc *dynamodb.DynamoDB, opts config.Options) (bool, []config.No
 	// }
 	// response, err := svc.Query(params)
 
-	return success, nodes, err
+	return nodes, err
 }
 
 // Delete a key in DynamoDB
-func (db DynamoDB) Delete(opts config.Options) (bool, config.Node, error) {
+func (db DynamoDB) Delete(opts config.Options) (config.Node, error) {
 	var err error
 	svc := Svc(opts)
-	success := false
-	result := config.Node{Key: opts.Key}
+	node := config.Node{Key: opts.Key}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -454,23 +428,19 @@ func (db DynamoDB) Delete(opts config.Options) (bool, config.Node, error) {
 	}
 
 	response, err := svc.DeleteItem(params)
-	if err != nil {
-		return success, result, err
+	if err == nil {
+		if len(response.Attributes) > 0 {
+			node.Value = response.Attributes["value"].B
+			node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
+		}
 	}
 
-	success = true
-	if len(response.Attributes) > 0 {
-		result.Value = response.Attributes["value"].B
-		result.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
-	}
-
-	return success, result, err
+	return node, err
 }
 
 // UpdateConfigVersion updates the configuration's global version and modified timestamp (fields unique to the root key "/")
-func (db DynamoDB) UpdateConfigVersion(opts config.Options) bool {
+func (db DynamoDB) UpdateConfigVersion(opts config.Options) error {
 	svc := Svc(opts)
-	success := false
 	now := time.Now()
 	params := &dynamodb.UpdateItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -496,10 +466,7 @@ func (db DynamoDB) UpdateConfigVersion(opts config.Options) bool {
 		UpdateExpression: aws.String("SET #m = :modified ADD cfgVersion :i"),
 	}
 	_, err := svc.UpdateItem(params)
-	if err == nil {
-		success = true
-	}
-	return success
+	return err
 }
 
 // Prepares data to be stored in DynamoDb as byte array. interface{} -> []byte

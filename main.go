@@ -28,9 +28,7 @@ var DiscfgCmd = &cobra.Command{
 	Use:   "discfg",
 	Short: "discfg is a distributed configuration service",
 	Long:  `A distributed configuration service using Amazon Web Services.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Do Stuff Here
-	},
+	Run:   func(cmd *cobra.Command, args []string) {},
 }
 
 // versionCmd displays the discfg version

@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/tmaiaroto/discfg/master/docs/logo.png?a" width="350" align="middle" alt="Distributed Config (discfg)" />
 
-[![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)]() [![godoc discfg](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/discfg) [![Build Status](https://travis-ci.org/tmaiaroto/discfg.svg?branch=master)](https://travis-ci.org/tmaiaroto/discfg) [![goreport discfg](https://goreportcard.com/badge/github.com/tmaiaroto/discfg)](https://goreportcard.com/report/github.com/tmaiaroto/discfg)
+[![License Apache 2](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://github.com/tmaiaroto/discfg/blob/master/LICENSE) [![godoc discfg](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/tmaiaroto/discfg) [![Build Status](https://travis-ci.org/tmaiaroto/discfg.svg?branch=master)](https://travis-ci.org/tmaiaroto/discfg) [![goreport discfg](https://goreportcard.com/badge/github.com/tmaiaroto/discfg)](https://goreportcard.com/report/github.com/tmaiaroto/discfg)
 
 _**NOTE** This project is under active development and is not considered production ready._ 
 Feedback very much appreciated.

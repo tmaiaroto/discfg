@@ -2,4 +2,4 @@
 package version
 
 // Semantic defines a semver string for discfg
-const Semantic = "0.8.1"
+const Semantic = "0.9.0"

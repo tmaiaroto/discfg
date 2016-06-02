@@ -17,12 +17,11 @@ func CreateCfg(opts config.Options, settings map[string]interface{}) config.Resp
 		Action: "create cfg",
 	}
 	if len(opts.CfgName) > 0 {
-		success, _, err := storage.CreateConfig(opts, settings)
+		_, err := storage.CreateConfig(opts, settings)
 		if err != nil {
 			resp.Error = err.Error()
 			resp.Message = "Error creating the configuration"
-		}
-		if success {
+		} else {
 			resp.Message = "Successfully created the configuration"
 		}
 	} else {
@@ -39,12 +38,11 @@ func DeleteCfg(opts config.Options) config.ResponseObject {
 		Action: "delete cfg",
 	}
 	if len(opts.CfgName) > 0 {
-		success, _, err := storage.DeleteConfig(opts)
+		_, err := storage.DeleteConfig(opts)
 		if err != nil {
 			resp.Error = err.Error()
 			resp.Message = "Error deleting the configuration"
-		}
-		if success {
+		} else {
 			resp.Message = "Successfully deleted the configuration"
 		}
 	} else {
@@ -63,12 +61,11 @@ func UpdateCfg(opts config.Options, settings map[string]interface{}) config.Resp
 
 	// Note: For some storage engines, such as DynamoDB, it could take a while for changes to be reflected.
 	if len(settings) > 0 {
-		success, _, updateErr := storage.UpdateConfig(opts, settings)
+		_, updateErr := storage.UpdateConfig(opts, settings)
 		if updateErr != nil {
 			resp.Error = updateErr.Error()
 			resp.Message = "Error updating the configuration"
-		}
-		if success {
+		} else {
 			resp.Message = "Successfully updated the configuration"
 		}
 	} else {
@@ -127,12 +124,11 @@ func SetKey(opts config.Options) config.ResponseObject {
 	key, keyErr := formatKeyName(opts.Key)
 	if keyErr == nil {
 		opts.Key = key
-		success, storageResponse, err := storage.Update(opts)
+		storageResponse, err := storage.Update(opts)
 		if err != nil {
 			resp.Error = "Error updating key value"
 			resp.Message = err.Error()
-		}
-		if success {
+		} else {
 			resp.Node.Key = key
 			resp.Node.Value = opts.Value
 			resp.Node.Version = 1
@@ -162,11 +158,10 @@ func GetKey(opts config.Options) config.ResponseObject {
 	key, keyErr := formatKeyName(opts.Key)
 	if keyErr == nil {
 		opts.Key = key
-		success, storageResponse, err := storage.Get(opts)
+		storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
-		}
-		if success {
+		} else {
 			resp.Node = storageResponse
 		}
 	} else {
@@ -183,12 +178,11 @@ func DeleteKey(opts config.Options) config.ResponseObject {
 	key, keyErr := formatKeyName(opts.Key)
 	if keyErr == nil {
 		opts.Key = key
-		success, storageResponse, err := storage.Delete(opts)
+		storageResponse, err := storage.Delete(opts)
 		if err != nil {
 			resp.Error = "Error getting key value"
 			resp.Message = err.Error()
-		}
-		if success {
+		} else {
 			resp.Node = storageResponse
 			resp.Node.Key = opts.Key
 			resp.Node.Value = nil
@@ -214,11 +208,10 @@ func Info(opts config.Options) config.ResponseObject {
 		// Just get the root key
 		opts.Key = "/"
 
-		success, storageResponse, err := storage.Get(opts)
+		storageResponse, err := storage.Get(opts)
 		if err != nil {
 			resp.Error = err.Error()
-		}
-		if success {
+		} else {
 			// Debating putting the node value on here... (allowing users to store values on the config or "root")
 			// resp.Node = storageResponse
 			// Set the configuration version and modified time on the response
@@ -233,21 +226,24 @@ func Info(opts config.Options) config.ResponseObject {
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
 
 			// Get the status (only applicable for some storage interfaces, such as DynamoDB)
-			resp.CfgState = storage.ConfigState(opts)
-
-			var buffer bytes.Buffer
-			buffer.WriteString(opts.CfgName)
-			if resp.CfgState != "" {
-				buffer.WriteString(" (")
-				buffer.WriteString(resp.CfgState)
-				buffer.WriteString(")")
+			resp.CfgState, err = storage.ConfigState(opts)
+			if err != nil {
+				resp.Error = err.Error()
+			} else {
+				var buffer bytes.Buffer
+				buffer.WriteString(opts.CfgName)
+				if resp.CfgState != "" {
+					buffer.WriteString(" (")
+					buffer.WriteString(resp.CfgState)
+					buffer.WriteString(")")
+				}
+				buffer.WriteString(" version ")
+				buffer.WriteString(strconv.FormatInt(resp.CfgVersion, 10))
+				buffer.WriteString(" last modified ")
+				buffer.WriteString(modified.Format(time.RFC1123))
+				resp.Message = buffer.String()
+				buffer.Reset()
 			}
-			buffer.WriteString(" version ")
-			buffer.WriteString(strconv.FormatInt(resp.CfgVersion, 10))
-			buffer.WriteString(" last modified ")
-			buffer.WriteString(modified.Format(time.RFC1123))
-			resp.Message = buffer.String()
-			buffer.Reset()
 		}
 	} else {
 		resp.Error = NotEnoughArgsMsg
