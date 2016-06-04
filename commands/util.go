@@ -25,6 +25,9 @@ const ValueRequired = "A value is required. Run 'discfg help' for usage."
 // DiscfgFileName defines the temporary filename used to hold the current working config name
 const DiscfgFileName = ".discfg"
 
+// NoCurrentWorkingCfgMsg defines a message for an error when a config name can not be found in a .discfg file
+const NoCurrentWorkingCfgMsg = "No current working configuration has been set at this path."
+
 // Out formats a config.ResponseObject for suitable output
 func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject {
 	// We've stored everything as binary data. But that can be many things.

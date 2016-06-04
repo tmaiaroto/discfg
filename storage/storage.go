@@ -2,12 +2,9 @@
 package storage
 
 import (
-	//"encoding/json"
 	"errors"
 	"github.com/tmaiaroto/discfg/config"
 	ddb "github.com/tmaiaroto/discfg/storage/dynamodb"
-	//"log"
-	//"net/http"
 )
 
 // Shipper can send information into a database or log etc. While DynamoDB is the planned data store,

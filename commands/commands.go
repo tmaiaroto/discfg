@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
-	// "log"
 )
 
 // CreateCfg creates a new configuration
@@ -102,7 +101,7 @@ func Which(opts config.Options) config.ResponseObject {
 	}
 	currentCfg := GetDiscfgNameFromFile()
 	if currentCfg == "" {
-		resp.Error = "No current working configuration has been set at this path."
+		resp.Error = NoCurrentWorkingCfgMsg
 	} else {
 		resp.Message = "Current working configuration: " + currentCfg
 		resp.CurrentDiscfg = currentCfg
