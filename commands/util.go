@@ -190,22 +190,38 @@ func isJSON(s string) bool {
 // still technically return JSON with a usable value. Valid JSON at that. Just with some funny looking characters =)
 func FormatJSONValue(resp config.ResponseObject) config.ResponseObject {
 	// Don't attempt to Unmarshal or anything if the Value is empty. We wouldn't want to create a panic now.
-	if resp.Item.Value == nil {
-		return resp
-	}
-	resp.Item.Value = string(resp.Item.Value.([]byte))
+	if resp.Item.Value != nil {
+		resp.Item.Value = string(resp.Item.Value.([]byte))
 
-	// The value could be base64 encoded, but it need not be.
-	val, err := base64.StdEncoding.DecodeString(resp.Item.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
-	if err == nil && val != nil {
-		resp.Item.Value = string(val)
+		// The value could be base64 encoded, but it need not be.
+		val, err := base64.StdEncoding.DecodeString(resp.Item.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
+		if err == nil && val != nil {
+			resp.Item.Value = string(val)
+		}
+
+		var jsonData map[string]interface{}
+		// Back to byte (because it could have potentially been base64 encoded)
+		err = json.Unmarshal([]byte(resp.Item.Value.(string)), &jsonData)
+		if err == nil {
+			resp.Item.Value = jsonData
+		}
 	}
 
-	var jsonData map[string]interface{}
-	// Back to byte (because it could have potentially been base64 encoded)
-	err = json.Unmarshal([]byte(resp.Item.Value.(string)), &jsonData)
-	if err == nil {
-		resp.Item.Value = jsonData
+	// The previous value as well
+	if resp.PrevItem.Value != nil {
+		resp.PrevItem.Value = string(resp.PrevItem.Value.([]byte))
+
+		// The value could be base64 encoded, but it need not be.
+		val, err := base64.StdEncoding.DecodeString(resp.PrevItem.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
+		if err == nil && val != nil {
+			resp.PrevItem.Value = string(val)
+		}
+
+		var jsonData map[string]interface{}
+		err = json.Unmarshal([]byte(resp.PrevItem.Value.(string)), &jsonData)
+		if err == nil {
+			resp.PrevItem.Value = jsonData
+		}
 	}
 
 	return resp
