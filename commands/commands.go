@@ -116,7 +116,12 @@ func SetKey(opts config.Options) config.ResponseObject {
 	}
 	// Do not allow empty values to be set
 	if opts.Value == nil {
-		resp.Error = ValueRequired
+		resp.Error = ValueRequiredMsg
+		return resp
+	}
+
+	if opts.CfgName == "" {
+		resp.Error = MissingCfgNameMsg
 		return resp
 	}
 
@@ -125,26 +130,23 @@ func SetKey(opts config.Options) config.ResponseObject {
 		opts.Key = key
 		storageResponse, err := storage.Update(opts)
 		if err != nil {
-			resp.Error = "Error updating key value"
-			resp.Message = err.Error()
+			resp.Error = err.Error()
+			resp.Message = "Error updating key value"
 		} else {
-			resp.Node.Key = key
-			resp.Node.Value = opts.Value
-			resp.Node.Version = 1
+			resp.Item.Key = key
+			resp.Item.Value = opts.Value
+			resp.Item.Version = 1
 
-			// Only set PrevNode if there was a previous value
+			// Only set PrevItem if there was a previous value
 			if storageResponse.Value != nil {
-				resp.PrevNode = storageResponse
-				resp.PrevNode.Key = key
-				// Update the current node's value if there was a previous version
-				resp.Node.Version = resp.PrevNode.Version + 1
+				resp.PrevItem = storageResponse
+				resp.PrevItem.Key = key
+				// Update the current item's value if there was a previous version
+				resp.Item.Version = resp.PrevItem.Version + 1
 			}
 		}
 	} else {
-		resp.Error = NotEnoughArgsMsg
-		if keyErr != nil {
-			resp.Error = keyErr.Error()
-		}
+		resp.Error = keyErr.Error()
 	}
 	return resp
 }
@@ -161,10 +163,10 @@ func GetKey(opts config.Options) config.ResponseObject {
 		if err != nil {
 			resp.Error = err.Error()
 		} else {
-			resp.Node = storageResponse
+			resp.Item = storageResponse
 		}
 	} else {
-		resp.Error = NotEnoughArgsMsg
+		resp.Error = keyErr.Error()
 	}
 	return resp
 }
@@ -179,16 +181,16 @@ func DeleteKey(opts config.Options) config.ResponseObject {
 		opts.Key = key
 		storageResponse, err := storage.Delete(opts)
 		if err != nil {
-			resp.Error = "Error getting key value"
-			resp.Message = err.Error()
+			resp.Error = err.Error()
+			resp.Message = "Error getting key value"
 		} else {
-			resp.Node = storageResponse
-			resp.Node.Key = opts.Key
-			resp.Node.Value = nil
-			resp.Node.Version = storageResponse.Version + 1
-			resp.PrevNode.Key = opts.Key
-			resp.PrevNode.Version = storageResponse.Version
-			resp.PrevNode.Value = storageResponse.Value
+			resp.Item = storageResponse
+			resp.Item.Key = opts.Key
+			resp.Item.Value = nil
+			resp.Item.Version = storageResponse.Version + 1
+			resp.PrevItem.Key = opts.Key
+			resp.PrevItem.Version = storageResponse.Version
+			resp.PrevItem.Value = storageResponse.Value
 			// log.Println(storageResponse)
 		}
 	} else {
@@ -211,17 +213,17 @@ func Info(opts config.Options) config.ResponseObject {
 		if err != nil {
 			resp.Error = err.Error()
 		} else {
-			// Debating putting the node value on here... (allowing users to store values on the config or "root")
-			// resp.Node = storageResponse
+			// Debating putting the item value on here... (allowing users to store values on the config or "root")
+			// resp.Item = storageResponse
 			// Set the configuration version and modified time on the response
-			// Node.CfgVersion and Node.CfgModifiedNanoseconds are not included in the JSON output
+			// Item.CfgVersion and Item.CfgModifiedNanoseconds are not included in the JSON output
 			resp.CfgVersion = storageResponse.CfgVersion
 			resp.CfgModified = 0
 			resp.CfgModifiedNanoseconds = storageResponse.CfgModifiedNanoseconds
-			if resp.Node.CfgModifiedNanoseconds > 0 {
-				resp.CfgModified = storageResponse.CfgModifiedNanoseconds / 1000000000
-			}
-			modified := time.Unix(resp.CfgModified, 0)
+			// Modified in seconds
+			resp.CfgModified = storageResponse.CfgModifiedNanoseconds / int64(time.Second)
+			// Modified parsed
+			modified := time.Unix(0, storageResponse.CfgModifiedNanoseconds)
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
 
 			// Get the status (only applicable for some storage interfaces, such as DynamoDB)

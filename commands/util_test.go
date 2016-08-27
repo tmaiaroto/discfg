@@ -2,6 +2,9 @@ package commands
 
 import (
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/tmaiaroto/discfg/config"
+	"github.com/tmaiaroto/discfg/storage"
+	"github.com/tmaiaroto/discfg/storage/mockdb"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -26,5 +29,28 @@ func TestGetDiscfgNameFromFile(t *testing.T) {
 			ce := GetDiscfgNameFromFile()
 			So(ce, ShouldEqual, "")
 		})
+	})
+}
+
+func TestFormatJSONValue(t *testing.T) {
+	Convey("Should handle basic string values", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg", Key: "initial"}
+		r := GetKey(opts)
+		rFormatted := FormatJSONValue(r)
+		So(rFormatted.Item.Value.(string), ShouldEqual, "initial value for test")
+
+		opts.Key = "json_value"
+		r = GetKey(opts)
+		rFormatted = FormatJSONValue(r)
+		So(rFormatted.Item.Value, ShouldHaveSameTypeAs, "string") //map[string]interface{}{}) // `{"json": "string", "num": 4}`)
+	})
+
+	Convey("Should handle base64 encoded string values", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg", Key: "encoded"}
+		r := GetKey(opts)
+		rFormatted := FormatJSONValue(r)
+		So(rFormatted.Item.Value.(string), ShouldEqual, `{"updated": "friday"}`)
 	})
 }

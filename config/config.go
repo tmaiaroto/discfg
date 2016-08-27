@@ -34,14 +34,15 @@ type AWS struct {
 
 // ResponseObject for output
 type ResponseObject struct {
-	Action string `json:"action"`
-	//Node          Node     `json:"node,omitempty"`
-	Node          Node   `json:"node,omitempty"`
-	PrevNode      Node   `json:"prevNode,omitempty"`
+	Action        string `json:"action"`
+	Item          Item   `json:"item,omitempty"`
+	PrevItem      Item   `json:"prevItem,omitempty"`
 	ErrorCode     int    `json:"errorCode,omitempty"`
 	CurrentDiscfg string `json:"currentDiscfg,omitempty"`
-	Error         string `json:"error,omitempty"`
-	Message       string `json:"message,omitempty"`
+	// Error message
+	Error string `json:"error,omitempty"`
+	// Message returned to the CLI
+	Message string `json:"message,omitempty"`
 	// Add this? Might be useful for troubleshooting, but users shouldn't really need to worry about it.
 	// On the other hand, for things like DynamoDB, it's handy to know where the config stands in terms of scalability/capacity.
 	// For things like S3, there's no real settings to care about (for the most part at least).
@@ -58,7 +59,7 @@ type ResponseObject struct {
 	CfgState string `json:"cfgState,omitempty"`
 }
 
-// NOTES ON NODES:
+// NOTES ON ITEMS (somewhat similar to etcd's nodes):
 // Unlike etcd, there is no "index" key because discfg doesn't try to be a state machine like etcd.
 // The index there refers to some internal state of the entire system and certain actions advance that state.
 // discfg does not have a distributed lock system nor this sense of global state.
@@ -84,8 +85,8 @@ type ResponseObject struct {
 // It's simply a different design decision in order to hit a goal. discfg's answer for this need would be to reach for
 // other AWS services to push notifications out (SNS), add to a message queue (SQS), etc.
 //
-// So with that in mind, a simple version is found on each node. While a bit naive, it's effective for many situations.
-// Not seen on this struct (for now), but stored in DynamoDB is also a list of the parent nodes (full paths).
+// So with that in mind, a simple version is found on each item. While a bit naive, it's effective for many situations.
+// Not seen on this struct (for now), but stored in DynamoDB is also a list of the parent items (full paths).
 // This is for traversing needs.
 //
 // Another great piece of DynamoDB documentation with regard to counters and conditional writes can be found here:
@@ -98,13 +99,13 @@ type ResponseObject struct {
 // Other storage engines may convert to something else.
 // For now, all data is coming in as string. Either from the terminal or a RESTful API.
 
-// Node defines the data structure around a key and its state
-type Node struct {
+// Item defines the data structure around a key and its state
+type Item struct {
 	Version int64  `json:"version,omitempty"`
 	Key     string `json:"key,omitempty"`
 	//Value   []byte `json:"value,omitempty"`
-	Value interface{} `json:"value,omitempty"`
-	//OutputValue            json.RawMessage `json:"value,omitempty"`
+	Value       interface{}            `json:"value,omitempty"`
+	OutputValue map[string]interface{} `json:"ovalue,omitempty"`
 
 	// perfect for json, not good if some other value was stored
 	//OutputValue            map[string]interface{} `json:"value,omitempty"`
@@ -116,7 +117,7 @@ type Node struct {
 	OutputExpiration string    `json:"expiration,omitempty"`
 	// For now, skip this. The original thinking was to have a tree like directory structure like etcd.
 	// Though discfg has now deviated away from that to a flat key/value structure.
-	// Nodes                  []Node    `json:"nodes,omitepty"`
+	// Items                  []Item    `json:"items,omitepty"`
 	CfgVersion             int64 `json:"-"`
 	CfgModifiedNanoseconds int64 `json:"-"`
 }

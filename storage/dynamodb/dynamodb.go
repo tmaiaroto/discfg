@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/tmaiaroto/discfg/config"
-	// "log"
 	"os"
 	"strconv"
 	"time"
@@ -180,14 +179,10 @@ func (db DynamoDB) ConfigState(opts config.Options) (string, error) {
 }
 
 // Update a key in DynamoDB
-func (db DynamoDB) Update(opts config.Options) (config.Node, error) {
+func (db DynamoDB) Update(opts config.Options) (config.Item, error) {
 	var err error
 	svc := Svc(opts)
-	node := config.Node{Key: opts.Key}
-
-	// log.Println("Setting on table name: " + name)
-	// log.Println(opts.Key)
-	// log.Println(opts.Value)
+	item := config.Item{Key: opts.Key}
 
 	ttlString := strconv.FormatInt(opts.TTL, 10)
 	expires := time.Now().Add(time.Duration(opts.TTL) * time.Second)
@@ -198,7 +193,6 @@ func (db DynamoDB) Update(opts config.Options) (config.Node, error) {
 		expiresString = "0"
 	}
 
-	//log.Println(value)
 	// DynamoDB type cheat sheet:
 	// B: []byte("some bytes")
 	// BOOL: aws.Bool(true)
@@ -263,19 +257,19 @@ func (db DynamoDB) Update(opts config.Options) (config.Node, error) {
 	if err == nil {
 		// The old values
 		if val, ok := response.Attributes["value"]; ok {
-			node.Value = val.B
-			node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
+			item.Value = val.B
+			item.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 		}
 	}
 
-	return node, err
+	return item, err
 }
 
 // Get a key in DynamoDB
-func (db DynamoDB) Get(opts config.Options) (config.Node, error) {
+func (db DynamoDB) Get(opts config.Options) (config.Item, error) {
 	var err error
 	svc := Svc(opts)
-	node := config.Node{Key: opts.Key}
+	item := config.Item{Key: opts.Key}
 
 	params := &dynamodb.QueryInput{
 		TableName: aws.String(opts.CfgName),
@@ -303,7 +297,7 @@ func (db DynamoDB) Get(opts config.Options) (config.Node, error) {
 	}
 	response, err := svc.Query(params)
 
-	if err != nil {
+	if err == nil {
 		// Print the error, cast err to awserr.Error to get the Code and
 		// Message from an error.
 		//fmt.Println(err.Error())
@@ -316,42 +310,42 @@ func (db DynamoDB) Get(opts config.Options) (config.Node, error) {
 			// But the update config version would need to have a compare for an empty value. See if DynamoDB can do that.
 			// For now, just check the existence of keys in the map.
 			if val, ok := response.Items[0]["value"]; ok {
-				node.Value = val.B
+				item.Value = val.B
 			}
 			if val, ok := response.Items[0]["version"]; ok {
-				node.Version, _ = strconv.ParseInt(*val.N, 10, 64)
+				item.Version, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
 
 			// Expiration/TTL (only set if > 0)
 			if val, ok := response.Items[0]["ttl"]; ok {
 				ttl, _ := strconv.ParseInt(*val.N, 10, 64)
 				if ttl > 0 {
-					node.TTL = ttl
+					item.TTL = ttl
 				}
 			}
 			if val, ok := response.Items[0]["expires"]; ok {
 				expiresNano, _ := strconv.ParseInt(*val.N, 10, 64)
 				if expiresNano > 0 {
-					node.Expiration = time.Unix(0, expiresNano)
+					item.Expiration = time.Unix(0, expiresNano)
 				}
 			}
 
 			// If cfgVersion and cfgModified are set because it's the root key "/" then set those too.
 			// This is only returned for the root key. no sense in making a separate get function because operations like
-			// exporting would then require more queries than necessary. However, it won't be displayed in the node's JSON output.
+			// exporting would then require more queries than necessary. However, it won't be displayed in the item's JSON output.
 			if val, ok := response.Items[0]["cfgVersion"]; ok {
-				node.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
+				item.CfgVersion, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
 			if val, ok := response.Items[0]["cfgModified"]; ok {
-				node.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
+				item.CfgModifiedNanoseconds, _ = strconv.ParseInt(*val.N, 10, 64)
 			}
 		}
 
 		// Check the TTL
-		if node.TTL > 0 {
-			// If expired, return an empty node
-			if node.Expiration.UnixNano() < time.Now().UnixNano() {
-				node = config.Node{Key: opts.Key}
+		if item.TTL > 0 {
+			// If expired, return an empty item
+			if item.Expiration.UnixNano() < time.Now().UnixNano() {
+				item = config.Item{Key: opts.Key}
 				// Delete the now expired item
 				// NOTE: This does mean waiting on another DynamoDB request and that technically means slower performance in these situations, but is it a conern?
 				// A goroutine doesn't help because there's not guarantee there's time for it to complete.
@@ -360,12 +354,13 @@ func (db DynamoDB) Get(opts config.Options) (config.Node, error) {
 		}
 	}
 
-	return node, err
+	return item, err
 }
 
-func getChildren(svc *dynamodb.DynamoDB, opts config.Options) ([]config.Node, error) {
+// Deprecated or at best delayed...
+func getChildren(svc *dynamodb.DynamoDB, opts config.Options) ([]config.Item, error) {
 	var err error
-	nodes := []config.Node{}
+	items := []config.Item{}
 
 	// TODO
 	// params := &dynamodb.QueryInput{
@@ -394,14 +389,14 @@ func getChildren(svc *dynamodb.DynamoDB, opts config.Options) ([]config.Node, er
 	// }
 	// response, err := svc.Query(params)
 
-	return nodes, err
+	return items, err
 }
 
 // Delete a key in DynamoDB
-func (db DynamoDB) Delete(opts config.Options) (config.Node, error) {
+func (db DynamoDB) Delete(opts config.Options) (config.Item, error) {
 	var err error
 	svc := Svc(opts)
-	node := config.Node{Key: opts.Key}
+	item := config.Item{Key: opts.Key}
 
 	params := &dynamodb.DeleteItemInput{
 		Key: map[string]*dynamodb.AttributeValue{
@@ -430,12 +425,12 @@ func (db DynamoDB) Delete(opts config.Options) (config.Node, error) {
 	response, err := svc.DeleteItem(params)
 	if err == nil {
 		if len(response.Attributes) > 0 {
-			node.Value = response.Attributes["value"].B
-			node.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
+			item.Value = response.Attributes["value"].B
+			item.Version, _ = strconv.ParseInt(*response.Attributes["version"].N, 10, 64)
 		}
 	}
 
-	return node, err
+	return item, err
 }
 
 // UpdateConfigVersion updates the configuration's global version and modified timestamp (fields unique to the root key "/")

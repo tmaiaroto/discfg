@@ -14,9 +14,9 @@ type Shipper interface {
 	DeleteConfig(config.Options) (interface{}, error)
 	UpdateConfig(config.Options, map[string]interface{}) (interface{}, error)
 	ConfigState(config.Options) (string, error)
-	Update(config.Options) (config.Node, error)
-	Get(config.Options) (config.Node, error)
-	Delete(config.Options) (config.Node, error)
+	Update(config.Options) (config.Item, error)
+	Get(config.Options) (config.Item, error)
+	Delete(config.Options) (config.Item, error)
 	UpdateConfigVersion(config.Options) error
 }
 
@@ -80,38 +80,38 @@ func ConfigState(opts config.Options) (string, error) {
 }
 
 // Update a key value in the configuration
-func Update(opts config.Options) (config.Node, error) {
-	var node config.Node
+func Update(opts config.Options) (config.Item, error) {
+	var item config.Item
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		err := UpdateConfigVersion(opts)
 		if err != nil {
-			return node, err
+			return item, err
 		}
 		return s.Update(opts)
 	}
-	return node, errors.New(errMsgInvalidShipper)
+	return item, errors.New(errMsgInvalidShipper)
 }
 
 // Get a key value in the configuration
-func Get(opts config.Options) (config.Node, error) {
-	var node config.Node
+func Get(opts config.Options) (config.Item, error) {
+	var item config.Item
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		return s.Get(opts)
 	}
-	return node, errors.New(errMsgInvalidShipper)
+	return item, errors.New(errMsgInvalidShipper)
 }
 
 // Delete a key value in the configuration
-func Delete(opts config.Options) (config.Node, error) {
-	var node config.Node
+func Delete(opts config.Options) (config.Item, error) {
+	var item config.Item
 	if s, ok := shippers[opts.StorageInterfaceName]; ok {
 		err := UpdateConfigVersion(opts)
 		if err != nil {
-			return node, err
+			return item, err
 		}
 		return s.Delete(opts)
 	}
-	return node, errors.New(errMsgInvalidShipper)
+	return item, errors.New(errMsgInvalidShipper)
 }
 
 // UpdateConfigVersion updates the global discfg config version and modified timestamp (on the root key "/")

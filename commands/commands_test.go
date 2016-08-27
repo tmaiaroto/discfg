@@ -6,7 +6,7 @@ import (
 	"github.com/tmaiaroto/discfg/storage"
 	"github.com/tmaiaroto/discfg/storage/mockdb"
 	"io/ioutil"
-	//"log"
+	"log"
 	"os"
 	"testing"
 )
@@ -20,6 +20,7 @@ func TestUpdateCfg(t *testing.T) {
 }
 func TestUse(t *testing.T) {
 }
+
 func TestWhich(t *testing.T) {
 	Convey("Should return an error when no .discfg exists", t, func() {
 		storage.RegisterShipper("mock", mockdb.MockShipper{})
@@ -43,37 +44,91 @@ func TestWhich(t *testing.T) {
 }
 
 func TestSetKey(t *testing.T) {
+	Convey("Should return a ResponseObject with an Error message if no value was provided", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0"}
+		r := SetKey(opts)
+		So(r.Action, ShouldEqual, "set")
+		So(r.Error, ShouldEqual, ValueRequiredMsg)
+	})
+
+	Convey("Should return a ResponseObject with an Error message if no key name was provided", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg", Value: []byte("test")}
+		r := SetKey(opts)
+		So(r.Action, ShouldEqual, "set")
+		So(r.Error, ShouldEqual, MissingKeyNameMsg)
+	})
+
+	Convey("Should return a ResponseObject with an Error message if no config name was provided", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", Value: []byte("test"), Key: "test"}
+		r := SetKey(opts)
+		So(r.Action, ShouldEqual, "set")
+		So(r.Error, ShouldEqual, MissingCfgNameMsg)
+	})
 }
+
 func TestGetKey(t *testing.T) {
 	Convey("Should return a ResponseObject with the key value", t, func() {
 		storage.RegisterShipper("mock", mockdb.MockShipper{})
 		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg", Key: "initial"}
 		r := GetKey(opts)
 		So(r.Action, ShouldEqual, "get")
-		So(r.Node.Version, ShouldEqual, int64(1))
-		So(string(r.Node.Value.([]byte)), ShouldEqual, "initial value for test")
+		So(r.Item.Version, ShouldEqual, int64(1))
+		So(string(r.Item.Value.([]byte)), ShouldEqual, "initial value for test")
 	})
 
-	Convey("Should return a ResponseObject with an Error message if not enough arguments were provided", t, func() {
+	Convey("Should return a ResponseObject with the key value", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg", Key: "encoded"}
+		r := GetKey(opts)
+		So(r.Action, ShouldEqual, "get")
+		So(r.Item.Version, ShouldEqual, int64(1))
+		//So(string(r.Item.Value.([]byte)), ShouldEqual, "initial value for test")
+		log.Println(FormatJSONValue(r).Item.Value)
+	})
+
+	Convey("Should return a ResponseObject with an Error message if no key name was provided", t, func() {
 		storage.RegisterShipper("mock", mockdb.MockShipper{})
 		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg"}
 		r := GetKey(opts)
 		So(r.Action, ShouldEqual, "get")
+		So(r.Error, ShouldEqual, MissingKeyNameMsg)
+	})
+}
+
+func TestDeleteKey(t *testing.T) {
+	Convey("Should return a ResponseObject with an Error message if not enough arguments were provided", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0"}
+		r := DeleteKey(opts)
+		So(r.Action, ShouldEqual, "delete")
 		So(r.Error, ShouldEqual, NotEnoughArgsMsg)
 	})
 }
-func TestDeleteKey(t *testing.T) {
-}
+
 func TestInfo(t *testing.T) {
 	Convey("Should return a ResponseObject with info about the config", t, func() {
 		storage.RegisterShipper("mock", mockdb.MockShipper{})
 		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0", CfgName: "mockcfg"}
 		r := Info(opts)
 		So(r.Action, ShouldEqual, "info")
-		// TODO... this fails. But works through RESTful API? Why???
-		//So(r.Node.CfgVersion, ShouldEqual, int64(4))
-		//So(r.CfgState, ShouldEqual, "ACTIVE")
+		So(r.CfgVersion, ShouldEqual, int64(4))
+		So(r.CfgState, ShouldEqual, "ACTIVE")
+		So(r.CfgModifiedNanoseconds, ShouldEqual, int64(1464675792991825937))
+		So(r.CfgModified, ShouldEqual, int64(1464675792))
+		So(r.CfgModifiedParsed, ShouldEqual, "2016-05-30T23:23:12-07:00")
+	})
+
+	Convey("Should return a ResponseObject with an Error message if not enough arguments were provided", t, func() {
+		storage.RegisterShipper("mock", mockdb.MockShipper{})
+		var opts = config.Options{StorageInterfaceName: "mock", Version: "0.0.0"}
+		r := Info(opts)
+		So(r.Action, ShouldEqual, "info")
+		So(r.Error, ShouldEqual, NotEnoughArgsMsg)
 	})
 }
+
 func TestExport(t *testing.T) {
 }

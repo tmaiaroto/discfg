@@ -36,11 +36,11 @@ package main
 // 	// This is very awesome. Very interesting possibilties now.
 // 	switch contentType {
 // 	case "text", "text/plain", "string":
-// 		return c.String(http.StatusOK, string(resp.Node.Value.([]byte)))
+// 		return c.String(http.StatusOK, string(resp.Item.Value.([]byte)))
 // 		break
 // 	// This one is going to be interesting. Weird? Bad practice? I don't know, but I dig it and it starts giving me wild ideas.
 // 	case "html", "text/html":
-// 		return c.HTML(http.StatusOK, string(resp.Node.Value.([]byte)))
+// 		return c.HTML(http.StatusOK, string(resp.Item.Value.([]byte)))
 // 		break
 // 	// TODO:
 // 	//case "jsonp":

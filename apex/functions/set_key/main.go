@@ -68,8 +68,8 @@ func main() {
 
 		// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 		// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
-		if resp.Node.TTL > 0 {
-			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
+		if resp.Item.TTL > 0 {
+			resp.Item.OutputExpiration = resp.Item.Expiration.Format(time.RFC3339Nano)
 		}
 
 		return commands.FormatJSONValue(resp), nil

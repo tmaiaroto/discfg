@@ -55,7 +55,7 @@ func TestConfigState(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	Convey("Should return with updated node value and version", t, func() {
+	Convey("Should return with updated item value and version", t, func() {
 		RegisterShipper("mock", mockdb.MockShipper{})
 		opts := config.Options{
 			StorageInterfaceName: "mock",
@@ -82,16 +82,16 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	Convey("A Shipper should get a key value, returning the node", t, func() {
+	Convey("A Shipper should get a key value, returning the item", t, func() {
 		RegisterShipper("mock", mockdb.MockShipper{})
 		opts := config.Options{
 			StorageInterfaceName: "mock",
 			CfgName:              "mockcfg",
 			Key:                  "initial",
 		}
-		node, err := Get(opts)
+		item, err := Get(opts)
 
-		So(string(node.Value.([]byte)), ShouldEqual, "initial value for test")
+		So(string(item.Value.([]byte)), ShouldEqual, "initial value for test")
 		So(err, ShouldBeNil)
 	})
 
@@ -102,19 +102,19 @@ func TestGet(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	Convey("A Shipper should delete a key value and return the deleted node", t, func() {
+	Convey("A Shipper should delete a key value and return the deleted item", t, func() {
 		RegisterShipper("mock", mockdb.MockShipper{})
 		opts := config.Options{
 			StorageInterfaceName: "mock",
 			CfgName:              "mockcfg",
 			Key:                  "initial_second",
 		}
-		node, err := Delete(opts)
+		item, err := Delete(opts)
 
-		So(string(node.Value.([]byte)), ShouldEqual, "a second initial value for test")
+		So(string(item.Value.([]byte)), ShouldEqual, "a second initial value for test")
 		So(err, ShouldBeNil)
 
-		So(mockdb.MockCfg[opts.CfgName]["initial_second"], ShouldResemble, config.Node{})
+		So(mockdb.MockCfg[opts.CfgName]["initial_second"], ShouldResemble, config.Item{})
 	})
 
 	Convey("A valid Shipper must be used", t, func() {
@@ -124,10 +124,10 @@ func TestDelete(t *testing.T) {
 }
 
 func TestUpdateConfigVersion(t *testing.T) {
-	Convey("The CfgVersion field on the Node should update", t, func() {
+	Convey("The CfgVersion field on the Item should update", t, func() {
 		RegisterShipper("mock", mockdb.MockShipper{})
 		_ = UpdateConfigVersion(config.Options{StorageInterfaceName: "", CfgName: "mockcfg"})
-		//node, _ := Get(config.Options{StorageInterfaceName: "", CfgName: "mockcfg", Key: "/"})
+		//item, _ := Get(config.Options{StorageInterfaceName: "", CfgName: "mockcfg", Key: "/"})
 		// The initial value is 4 and TestUpdate changed it to 5, so this should now be 6.
 		// I couldn't get Go Convey's Reset() to work. Well it "worked" but it returned ??? when running it in TestUpdate()
 		// and I couldn't get the mockdb.MockCfg to change.

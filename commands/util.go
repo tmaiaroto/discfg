@@ -2,6 +2,7 @@
 package commands
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,19 +15,28 @@ import (
 	"time"
 )
 
-// TODO: Change NotEnoughArgsMsg and use config/status.go instead to centralize the error codes and messages.
+// TODO: Refactor: Change the following ...Msg constants and use config/status.go instead to centralize the error codes and messages.
 
 // NotEnoughArgsMsg defines a message for input validation
 const NotEnoughArgsMsg = "Not enough arguments passed. Run 'discfg help' for usage."
 
 // ValueRequired defines a message for input validation
-const ValueRequired = "A value is required. Run 'discfg help' for usage."
+const ValueRequiredMsg = "A value is required. Run 'discfg help' for usage."
 
 // DiscfgFileName defines the temporary filename used to hold the current working config name
 const DiscfgFileName = ".discfg"
 
 // NoCurrentWorkingCfgMsg defines a message for an error when a config name can not be found in a .discfg file
 const NoCurrentWorkingCfgMsg = "No current working configuration has been set at this path."
+
+// MissingKeyNameMsg defines a message for input validation when a key name was not passed
+const MissingKeyNameMsg = "Missing key name"
+
+// InvalidKeyNameMsg defines a message for input validation
+const InvalidKeyNameMsg = "Invalid key name"
+
+// MissingCfgNameMsg defines a message for input validation
+const MissingCfgNameMsg = "Missing configuration name"
 
 // Out formats a config.ResponseObject for suitable output
 func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject {
@@ -41,30 +51,30 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 	// ...and will also handle the content-type situation.
 	// Output JSON, output Msgpack, output Protobuf? output whatever Content-Type.
 	//
-	// if resp.Node.Value != nil {
-	// 	if !isJSON(string(resp.Node.Value)) {
+	// if resp.Item.Value != nil {
+	// 	if !isJSON(string(resp.Item.Value)) {
 	// 		// Return base64 when not JSON?
-	// 		// b64Str := base64.StdEncoding.EncodeToString(resp.Node.Value)
-	// 		//resp.Node.Value = []byte(strconv.Quote(b64Str))
-	// 		resp.Node.Value = []byte(strconv.Quote(string(resp.Node.Value)))
+	// 		// b64Str := base64.StdEncoding.EncodeToString(resp.Item.Value)
+	// 		//resp.Item.Value = []byte(strconv.Quote(b64Str))
+	// 		resp.Item.Value = []byte(strconv.Quote(string(resp.Item.Value)))
 	// 	}
 	// 	// The output value is always raw JSON. It is not stored in the data store.
 	// 	// It's simply for display.
-	// 	resp.Node.OutputValue = json.RawMessage(resp.Node.Value)
+	// 	resp.Item.OutputValue = json.RawMessage(resp.Item.Value)
 	// }
 
-	// // Same for the PrevNode if set
-	// if resp.PrevNode.Value != nil {
-	// 	if !isJSON(string(resp.PrevNode.Value)) {
-	// 		resp.PrevNode.Value = []byte(strconv.Quote(string(resp.PrevNode.Value)))
+	// // Same for the PrevItem if set
+	// if resp.PrevItem.Value != nil {
+	// 	if !isJSON(string(resp.PrevItem.Value)) {
+	// 		resp.PrevItem.Value = []byte(strconv.Quote(string(resp.PrevItem.Value)))
 	// 	}
-	// 	resp.PrevNode.OutputValue = json.RawMessage(resp.PrevNode.Value)
+	// 	resp.PrevItem.OutputValue = json.RawMessage(resp.PrevItem.Value)
 	// }
 
 	// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 	// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
-	if resp.Node.TTL > 0 {
-		resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
+	if resp.Item.TTL > 0 {
+		resp.Item.OutputExpiration = resp.Item.Expiration.Format(time.RFC3339Nano)
 	}
 
 	switch opts.OutputFormat {
@@ -84,9 +94,9 @@ func Out(opts config.Options, resp config.ResponseObject) config.ResponseObject 
 		if resp.Error != "" {
 			errorLabel(resp.Error)
 		}
-		if resp.Node.Value != nil {
+		if resp.Item.Value != nil {
 			// The value should be a byte array, for th CLI we want a string.
-			fmt.Println(string(resp.Node.Value.([]byte)))
+			fmt.Println(string(resp.Item.Value.([]byte)))
 		} else {
 			if resp.Message != "" {
 				fmt.Println(resp.Message)
@@ -139,13 +149,13 @@ func formatKeyName(key string) (string, error) {
 	if len(key) > 0 {
 		k = key
 	} else {
-		return "", errors.New("Missing key name")
+		return "", errors.New(MissingKeyNameMsg)
 	}
 
 	// Ensure valid characters
 	r, _ := regexp.Compile(`[\w\/\-]+$`)
 	if !r.MatchString(k) {
-		return "", errors.New("Invalid key name")
+		return "", errors.New(InvalidKeyNameMsg)
 	}
 
 	// Remove any trailing slashes (unless there's only one, the root).
@@ -172,7 +182,7 @@ func isJSON(s string) bool {
 
 }
 
-// FormatJSONValue sets the Node Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
+// FormatJSONValue sets the Item Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
 // so that it can be converted to JSON in an HTTP response. If it can't be represented in a map, then it'll be set as a string.
 // For example, a string was set as the value, we can still represent that in JSON. However, if an image was stored...Then it's
 // going to look ugly. It won't be a base64 string, it'll be the string representation of the binary data. Which apparently Chrome
@@ -180,14 +190,23 @@ func isJSON(s string) bool {
 // still technically return JSON with a usable value. Valid JSON at that. Just with some funny looking characters =)
 func FormatJSONValue(resp config.ResponseObject) config.ResponseObject {
 	// Don't attempt to Unmarshal or anything if the Value is empty. We wouldn't want to create a panic now.
-	if resp.Node.Value == nil {
+	if resp.Item.Value == nil {
 		return resp
 	}
-	var dat map[string]interface{}
-	if err := json.Unmarshal(resp.Node.Value.([]byte), &dat); err != nil {
-		resp.Node.Value = string(resp.Node.Value.([]byte))
-	} else {
-		resp.Node.Value = dat
+	resp.Item.Value = string(resp.Item.Value.([]byte))
+
+	// The value could be base64 encoded, but it need not be.
+	val, err := base64.StdEncoding.DecodeString(resp.Item.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
+	if err == nil && val != nil {
+		resp.Item.Value = string(val)
 	}
+
+	var jsonData map[string]interface{}
+	// Back to byte (because it could have potentially been base64 encoded)
+	err = json.Unmarshal([]byte(resp.Item.Value.(string)), &jsonData)
+	if err == nil {
+		resp.Item.Value = jsonData
+	}
+
 	return resp
 }

@@ -18,7 +18,7 @@ var discfgDBTable = os.Getenv("DISCFG_TABLE")
 // The JSON message passd to the Lambda (should include key, value, etc.)
 type message struct {
 	Name string `json:"name"`
-	// Comes in as string, but needs to be converted to in64
+	// Comes in as string, but needs to be converted to int64
 	TTL   string `json:"ttl"`
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -53,10 +53,11 @@ func main() {
 
 		// Format the expiration time (if applicable). This prevents output like "0001-01-01T00:00:00Z" when empty
 		// and allows for the time.RFC3339Nano format to be used whereas time.Time normally marshals to a different format.
-		if resp.Node.TTL > 0 {
-			resp.Node.OutputExpiration = resp.Node.Expiration.Format(time.RFC3339Nano)
+		if resp.Item.TTL > 0 {
+			resp.Item.OutputExpiration = resp.Item.Expiration.Format(time.RFC3339Nano)
 		}
 
-		return commands.FormatJSONValue(resp), nil
+		r := commands.FormatJSONValue(resp)
+		return r, nil
 	})
 }

@@ -54,18 +54,19 @@ You should see something like this:
 ```
 {
   "action": "get",
-  "node": {
+  "item": {
     "version": 2,
+    "key": "mykey",
     "value": {
       "foo": "test"
     }
   },
-  "prevNode": {}
+  "prevItem": {}
 }
 ```
 
-NOTE: You will only see ```prevNode``` populated upon an update. discfg does not store a history
-of values.
+NOTE: You will only see ```prevItem``` populated upon an update. discfg does not store a history
+of item values.
 
 ### Serverless API
 

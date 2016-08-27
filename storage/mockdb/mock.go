@@ -7,23 +7,33 @@ import (
 )
 
 // MockCfg is just a map of mock records within a mock config.
-var MockCfg = map[string]map[string]config.Node{
+var MockCfg = map[string]map[string]config.Item{
 	"mockcfg": {
-		"/": config.Node{
+		"/": config.Item{
 			Key:                    "/",
 			Value:                  []byte("Mock configuration"),
 			CfgVersion:             int64(4),
 			CfgModifiedNanoseconds: int64(1464675792991825937),
 		},
-		"initial": config.Node{
+		"initial": config.Item{
 			Key:     "initial",
 			Value:   []byte("initial value for test"),
 			Version: int64(1),
 		},
-		"initial_second": config.Node{
+		"initial_second": config.Item{
 			Key:     "initial_second",
 			Value:   []byte("a second initial value for test"),
 			Version: int64(3),
+		},
+		"json_value": config.Item{
+			Key:     "initial_second",
+			Value:   []byte(`{"json": "string", "num": 4}`),
+			Version: int64(3),
+		},
+		"encoded": config.Item{
+			Key:     "encoded",
+			Value:   []byte(`eyJ1cGRhdGVkIjogImZyaWRheSJ9`),
+			Version: int64(1),
 		},
 	},
 }
@@ -62,16 +72,16 @@ func (m MockShipper) UpdateConfig(opts config.Options, settings map[string]inter
 // ConfigState returns the state of the config
 func (m MockShipper) ConfigState(opts config.Options) (string, error) {
 	var err error
-	return "", err
+	return "ACTIVE", err
 }
 
-// Update a Node (record)
-func (m MockShipper) Update(opts config.Options) (config.Node, error) {
+// Update a Item (record)
+func (m MockShipper) Update(opts config.Options) (config.Item, error) {
 	var err error
 	if val, ok := MockCfg[opts.CfgName][opts.Key]; ok {
 		val.Version++
 	} else {
-		MockCfg[opts.CfgName][opts.Key] = config.Node{
+		MockCfg[opts.CfgName][opts.Key] = config.Item{
 			Key:     opts.Key,
 			Value:   opts.Value,
 			Version: int64(1),
@@ -80,14 +90,14 @@ func (m MockShipper) Update(opts config.Options) (config.Node, error) {
 	return MockCfg[opts.CfgName][opts.Key], err
 }
 
-// Get a Node (record)
-func (m MockShipper) Get(opts config.Options) (config.Node, error) {
+// Get a Item (record)
+func (m MockShipper) Get(opts config.Options) (config.Item, error) {
 	var err error
 	return MockCfg[opts.CfgName][opts.Key], err
 }
 
-// Delete a Node (record)
-func (m MockShipper) Delete(opts config.Options) (config.Node, error) {
+// Delete a Item (record)
+func (m MockShipper) Delete(opts config.Options) (config.Item, error) {
 	var err error
 	defer delete(MockCfg[opts.CfgName], opts.Key)
 	return MockCfg[opts.CfgName][opts.Key], err
@@ -101,7 +111,7 @@ func (m MockShipper) UpdateConfigVersion(opts config.Options) error {
 		n.CfgVersion++
 		MockCfg[opts.CfgName]["/"] = n
 	} else {
-		err = errors.New("No config name passed.")
+		err = errors.New("Interface Error: No config name passed.")
 	}
 	return err
 }
