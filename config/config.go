@@ -57,6 +57,15 @@ type ResponseObject struct {
 	CfgModifiedParsed string `json:"cfgModifiedParsed,omitempty"`
 	// Configuration state (some storage engines, such as DynamoDB, have "active" and "updating" states)
 	CfgState string `json:"cfgState,omitempty"`
+	// Information about the configuration storage
+	CfgStorage StorageInfo `json:"cfgStorage,omitempty"`
+}
+
+// StorageInfo holds information about the storage engine used for the configuration
+type StorageInfo struct {
+	Name          string                 `json:"name"`
+	InterfaceName string                 `json:"interfaceName"`
+	Options       map[string]interface{} `json:"options"`
 }
 
 // NOTES ON ITEMS (somewhat similar to etcd's nodes):

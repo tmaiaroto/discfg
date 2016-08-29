@@ -226,6 +226,11 @@ func Info(opts config.Options) config.ResponseObject {
 			modified := time.Unix(0, storageResponse.CfgModifiedNanoseconds)
 			resp.CfgModifiedParsed = modified.Format(time.RFC3339)
 
+			// Set information about the storage engine
+			resp.CfgStorage.InterfaceName = opts.StorageInterfaceName
+			resp.CfgStorage.Name = storage.Name(opts)
+			resp.CfgStorage.Options = storage.Options(opts)
+
 			// Get the status (only applicable for some storage interfaces, such as DynamoDB)
 			resp.CfgState, err = storage.ConfigState(opts)
 			if err != nil {

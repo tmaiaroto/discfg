@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/fatih/structs"
 	"github.com/tmaiaroto/discfg/config"
 	"os"
 	"strconv"
@@ -15,6 +16,29 @@ import (
 
 // DynamoDB implements the Shipper interface.
 type DynamoDB struct {
+}
+
+// Name simply returns the display name for this shipper. It might return version info too from a database,
+// so the config options are present should it need to connect for that.
+func (db DynamoDB) Name(opts config.Options) string {
+	return "DynamoDB"
+}
+
+// Options returns misc. settings and options for the datastore. For DynamoDB this is going to be the
+// read and write capacity units, but anything like that would be found here. Up to the discretion of
+// the interface.
+func (db DynamoDB) Options(opts config.Options) map[string]interface{} {
+	svc := Svc(opts)
+
+	params := &dynamodb.DescribeTableInput{
+		TableName: aws.String(opts.CfgName), // Required
+	}
+	resp, err := svc.DescribeTable(params)
+	if err == nil {
+		m := structs.Map(resp)
+		return m
+	}
+	return map[string]interface{}{}
 }
 
 // Svc configures the DynamoDB service to use

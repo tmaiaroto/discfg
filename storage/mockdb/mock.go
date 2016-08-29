@@ -51,6 +51,16 @@ var MockCfg = map[string]map[string]config.Item{
 type MockShipper struct {
 }
 
+// Name returns the name for the interface
+func (m MockShipper) Name(opts config.Options) string {
+	return "Mock Storage Engine"
+}
+
+// Options returns various settings and options for the shipper
+func (m MockShipper) Options(opts config.Options) map[string]interface{} {
+	return map[string]interface{}{"example": "option"}
+}
+
 // CreateConfig creates a config
 func (m MockShipper) CreateConfig(opts config.Options, settings map[string]interface{}) (interface{}, error) {
 	var err error

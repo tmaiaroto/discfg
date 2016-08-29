@@ -2,7 +2,7 @@
 package commands
 
 import (
-	"encoding/base64"
+	//"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -182,26 +182,24 @@ func isJSON(s string) bool {
 
 }
 
-// FormatJSONValue sets the Item Value (an interface{}) as a map[string]interface{} (from []byte, which is how it's stored)
-// so that it can be converted to JSON in an HTTP response. If it can't be represented in a map, then it'll be set as a string.
-// For example, a string was set as the value, we can still represent that in JSON. However, if an image was stored...Then it's
-// going to look ugly. It won't be a base64 string, it'll be the string representation of the binary data. Which apparently Chrome
-// will render if given...But still. Not so hot. The user should know what they are setting and getting though and this should
-// still technically return JSON with a usable value. Valid JSON at that. Just with some funny looking characters =)
+// FormatJSONValue sets the Item Value (an interface{}) as a map[string]interface{} so it can be output as JSON.
+// The stored value could actually be JSON so it tries to Unmarshal. If it can't, it will just be a string value
+// in the response object which will already be JSON (ie. {"value": "the string value"}).
 func FormatJSONValue(resp config.ResponseObject) config.ResponseObject {
 	// Don't attempt to Unmarshal or anything if the Value is empty. We wouldn't want to create a panic now.
 	if resp.Item.Value != nil {
 		resp.Item.Value = string(resp.Item.Value.([]byte))
 
+		// TODO: Perhaps an option for storing/retrieving data...
 		// The value could be base64 encoded, but it need not be.
-		val, err := base64.StdEncoding.DecodeString(resp.Item.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
-		if err == nil && val != nil {
-			resp.Item.Value = string(val)
-		}
+		// val, err := base64.StdEncoding.DecodeString(resp.Item.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
+		// if err == nil && val != nil {
+		// 	resp.Item.Value = string(val)
+		// }
 
+		// Try to unmarshal to map if JSON string
 		var jsonData map[string]interface{}
-		// Back to byte (because it could have potentially been base64 encoded)
-		err = json.Unmarshal([]byte(resp.Item.Value.(string)), &jsonData)
+		err := json.Unmarshal([]byte(resp.Item.Value.(string)), &jsonData)
 		if err == nil {
 			resp.Item.Value = jsonData
 		}
@@ -211,14 +209,15 @@ func FormatJSONValue(resp config.ResponseObject) config.ResponseObject {
 	if resp.PrevItem.Value != nil {
 		resp.PrevItem.Value = string(resp.PrevItem.Value.([]byte))
 
+		// TODO: Perhaps an option for storing/retrieving data...
 		// The value could be base64 encoded, but it need not be.
-		val, err := base64.StdEncoding.DecodeString(resp.PrevItem.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
-		if err == nil && val != nil {
-			resp.PrevItem.Value = string(val)
-		}
+		// val, err := base64.StdEncoding.DecodeString(resp.PrevItem.Value.(string)) //`eyJ1cGRhdGVkIjogImZyaWRheSJ9`)
+		// if err == nil && val != nil {
+		// 	resp.PrevItem.Value = string(val)
+		// }
 
 		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(resp.PrevItem.Value.(string)), &jsonData)
+		err := json.Unmarshal([]byte(resp.PrevItem.Value.(string)), &jsonData)
 		if err == nil {
 			resp.PrevItem.Value = jsonData
 		}

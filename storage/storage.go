@@ -18,6 +18,8 @@ type Shipper interface {
 	Get(config.Options) (config.Item, error)
 	Delete(config.Options) (config.Item, error)
 	UpdateConfigVersion(config.Options) error
+	Name(config.Options) string
+	Options(config.Options) map[string]interface{}
 }
 
 // ShipperResult contains errors and other information.
@@ -44,6 +46,22 @@ func RegisterShipper(name string, shipper Shipper) {
 // ListShippers returns the list of available shippers.
 func ListShippers() map[string]Shipper {
 	return shippers
+}
+
+// Name returns the pretty display name for the shipper
+func Name(opts config.Options) string {
+	if s, ok := shippers[opts.StorageInterfaceName]; ok {
+		return s.Name(opts)
+	}
+	return ""
+}
+
+// Options returns various settings and options for the shipper
+func Options(opts config.Options) map[string]interface{} {
+	if s, ok := shippers[opts.StorageInterfaceName]; ok {
+		return s.Options(opts)
+	}
+	return map[string]interface{}{}
 }
 
 // CreateConfig creates a new configuration returning success true/false along with any response and error.
