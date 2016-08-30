@@ -141,7 +141,7 @@ var infoCmd = &cobra.Command{
 	Short: "config information",
 	Long:  `Information about the config including version and modified time`,
 	Run: func(cmd *cobra.Command, args []string) {
-		Options = setOptsFromArgs(args)
+		setOptsFromArgs(args)
 		resp := commands.Info(Options)
 		commands.Out(Options, resp)
 	},
@@ -213,25 +213,23 @@ func main() {
 }
 
 // Takes positional command arguments and sets options from them (because some may be optional)
-func setOptsFromArgs(args []string) config.Options {
-	var o config.Options
-
+func setOptsFromArgs(args []string) {
 	// The user may have set a config name in a `.discfg` file, for convenience, to shorten the commands.
 	name := commands.GetDiscfgNameFromFile()
-	o.CfgName = name
+	Options.CfgName = name
 
 	switch len(args) {
 	case 1:
-		o.Key = args[0]
+		Options.Key = args[0]
 		break
 	case 2:
-		o.Key = args[0]
-		o.Value = []byte(args[1])
+		Options.Key = args[0]
+		Options.Value = []byte(args[1])
 		break
 	case 3:
-		o.CfgName = args[0]
-		o.Key = args[1]
-		o.Value = []byte(args[2])
+		Options.CfgName = args[0]
+		Options.Key = args[1]
+		Options.Value = []byte(args[2])
 		break
 	}
 
@@ -240,9 +238,7 @@ func setOptsFromArgs(args []string) config.Options {
 	if dataFile != "" {
 		b, err := ioutil.ReadFile(dataFile)
 		if err == nil {
-			o.Value = b
+			Options.Value = b
 		}
 	}
-
-	return o
 }

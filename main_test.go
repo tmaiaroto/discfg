@@ -8,26 +8,26 @@ import (
 func TestSetOptsFromArgs(t *testing.T) {
 	Convey("When 1 argument is passed", t, func() {
 		Convey("A Key option should be set, a Value should not", func() {
-			o := setOptsFromArgs([]string{"some key"})
-			So(o.Key, ShouldEqual, "some key")
-			So(string(o.Value), ShouldEqual, "")
+			setOptsFromArgs([]string{"some key"})
+			So(Options.Key, ShouldEqual, "some key")
+			So(string(Options.Value), ShouldEqual, "")
 		})
 	})
 
 	Convey("When 2 arguments are passed", t, func() {
 		Convey("A Key and Value option should be set", func() {
-			o := setOptsFromArgs([]string{"some key", "some value"})
-			So(o.Key, ShouldEqual, "some key")
-			So(string(o.Value), ShouldEqual, "some value")
+			setOptsFromArgs([]string{"some key", "some value"})
+			So(Options.Key, ShouldEqual, "some key")
+			So(string(Options.Value), ShouldEqual, "some value")
 		})
 	})
 
 	Convey("When 3 arguments are passed", t, func() {
 		Convey("CfgName, Key, and Value options should be set", func() {
-			o := setOptsFromArgs([]string{"testCfg", "some key", "some value"})
-			So(o.CfgName, ShouldEqual, "testCfg")
-			So(o.Key, ShouldEqual, "some key")
-			So(string(o.Value), ShouldEqual, "some value")
+			setOptsFromArgs([]string{"testCfg", "some key", "some value"})
+			So(Options.CfgName, ShouldEqual, "testCfg")
+			So(Options.Key, ShouldEqual, "some key")
+			So(string(Options.Value), ShouldEqual, "some value")
 		})
 	})
 }
