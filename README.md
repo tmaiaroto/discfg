@@ -5,7 +5,7 @@
 _**NOTE** This project is under active development and is not considered production ready._ 
 Feedback very much appreciated.
 
-A serverless and distributed configuration service built on top of Amazon Web Services. Specifically,
+A serverless and distributed (key/value) configuration service built on top of Amazon Web Services. Specifically,
 it aims to use Lambda, DyanmoDB, and API Gateway. Though it can be used with other services.
 
 It can install to your system as a binary, so managing configuration from any machine is simple from 
