@@ -139,44 +139,29 @@ It runs on port `8899` by default, but you can change that with a `--port` flag.
 that discfg only uses AWS for storage engines right now so you should be sure to pay attention
 to the AWS region. It's `us-east-1` by default, but you can change that too with a `region` flag.
 
-## Why Yet Another One?
+## What prompted this tool?
 
-The goal is not to re-invent the wheel. There are many other solutions out there that work well. 
-However, they are mostly "self-host" solutions. As a result, there is a bit of maintenance involved
-and additional cost to get the redundancy. Plus, many of these solutions don't really take access 
-control into account (discfg included). By leveraging AWS, there's a lot of convenience and options
-for then securing access to these tools. In this case, something like API Gateway is a no-brainer. 
-_A big goal for discfg is to provide a serverless option for application configuration._
+The need for a serverless application configuration. When dealing with AWS Lambda, state and 
+configuration become a regular issue with no consistent solution. This ends up becoming a bit
+of boilerplate code in each of your functions.
 
-The idea is that discfg provides a quicker, cheaper, and perhaps more convenient, option in the mix. 
-Yes, you'll have to make some concessions for that...But that doesn't mean you still can't get 
-a highly available solution that costs less and is easier to maintain.
+Discfg solves this need by making it very easy to work with key/value configuration data.
 
-Originally, this project was heavily inspired by the wonderful [etcd](https://github.com/coreos/etcd). 
-The goal was to create an alternative that would be cheaper to host, leverage AWS infrastructure, 
-and have a flexible storage engine which would allow you to choose how to storage the data. 
+Of course your application need not be serverless or run in AWS Lambda to benefit from discfg.
 
-However, the project has since deviated far away from etcd. There are some very important 
-differences and the intended use case is a bit different. People are using etcd (and raft) 
-for some fantastic things. The target use case for discfg isn't quite the same, though there
-is some cross-over. There's some ideas that discfg borrows from etcd.
+Managing a bunch of environment variables isn't scalable. It's annoying and when you go to deploy
+or have a co-worker work on the project, it becomes a hassle. Even with tools like Docker. Things
+change and keeping on top of configuration changes is simply annoying with environment variables.
 
-In fact, due to discfg's flexiblity, there may be other possible uses beyond the original intent
-of (micro)services and application configuration. 
+Likewise, dropping an .ini or .json or .env file into a project is also not a terrific solution.
+Configuration files also become quickly dated and it still doesn't help much when you need to
+share configurations with others.
 
-When building _applications_ or (micro)services, configuration and state become a challenge. 
-However an eventually consistent database like DynamoDB may work just fine. We may or may not have 
-1,000's of writes per second. Either way, since we are leveraging Amazon services we should be able
-to scale in a cost effective manner. There's just some trade offs for that cost and convenience.
+Essentially, discfg is an interface around DynamoDB (and other distributed storage solutions).
+Opposed to some other configuration tools, it's not responsible for the distributed storage itself.
 
-This tool will use Amazon DynamoDB to store data for each configuration, but it was designed with the
-ability to use other storage engines in the future (such as S3). Each storage solution is going to come
-with different pros and cons.
-
-To be completely serverless, Lambda with API Gateway can be used to work with the configuration. 
-Additionally, discfg can be used from the command line or you can run your own REST API server(s). 
-You could even import the package into your own Go application. _Very flexible and convenient._
-
-Essentially, discfg is basically an interface around DynamoDB (and other distributed storage solutions).
-It's not responsible for the distributed storage itself. Theoretically, this means it could even use
-etcd as a storage engine.
+Etcd was a big inspiration for this project. However, etcd is not "serverless" and so it requires one
+to set up and maintain a cluster of servers. This is a little less convenient, though the tool itself
+is also much faster. There's a trade off for convenience. Discfg was meant for higher level application
+use and so the performance factor wasn't a concern. The feature set of discfg also started to diverge
+from etcd as well. Discfg is simply a tool with a different use case.

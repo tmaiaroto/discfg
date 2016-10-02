@@ -3,5 +3,6 @@
   "key": "$input.params('key')",
   "value": "$util.escapeJavaScript($input.body)",
   "ttl": "$input.params('ttl')",
-  "settings": "$util.escapeJavaScript($input.body)"
+  "settings": "$util.escapeJavaScript($input.body)",
+  "raw": "$input.params('raw')"
 }

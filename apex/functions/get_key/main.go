@@ -57,6 +57,11 @@ func main() {
 			resp.Item.OutputExpiration = resp.Item.Expiration.Format(time.RFC3339Nano)
 		}
 
+		// Just return the raw value for the given key if raw was passed as true
+		// if m.Raw == "true" {
+		// 	return resp.Item.Value, nil
+		// }
+
 		r := commands.FormatJSONValue(resp)
 		return r, nil
 	})
