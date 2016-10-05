@@ -19,7 +19,8 @@ func TestSetOptsFromArgs(t *testing.T) {
 		Convey("A CfgName and Key option should be set", func() {
 			setOptsFromArgs([]string{"testCfg", "some key"})
 			So(Options.CfgName, ShouldEqual, "testCfg")
-			So(string(Options.Value), ShouldEqual, "some key")
+			So(string(Options.Key), ShouldEqual, "some key")
+			So(string(Options.Value), ShouldEqual, "")
 		})
 	})
 
