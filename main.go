@@ -215,18 +215,36 @@ func main() {
 // Takes positional command arguments and sets options from them (because some may be optional)
 func setOptsFromArgs(args []string) {
 	// The user may have set a config name in a `.discfg` file, for convenience, to shorten the commands.
+	// This will affect the positional arguments. The confusing part will be if a config name has been
+	// set and then the user forgets and puts the config name in the positional arguments. To avoid
+	// this, a check against the first argument and the config name is made...But that means setting
+	// a key name the same as the config name requires 3 positional arguments.
+	// I'm beginning to wonder if pulling this out was even worthwhile since some of it also depends
+	// on the actual command.
 	name := commands.GetDiscfgNameFromFile()
-	Options.CfgName = name
+	if name != "" {
+		Options.CfgName = name
+	}
 
 	switch len(args) {
 	case 1:
-		Options.Key = args[0]
+		if Options.CfgName != "" && args[0] != Options.CfgName {
+			Options.Key = args[0]
+		} else {
+			Options.CfgName = args[0]
+		}
 		break
 	case 2:
-		Options.Key = args[0]
-		Options.Value = []byte(args[1])
+		if Options.CfgName != "" && args[0] != Options.CfgName {
+			Options.Key = args[0]
+			Options.Value = []byte(args[1])
+		} else {
+			Options.CfgName = args[0]
+			Options.Key = args[1]
+		}
 		break
 	case 3:
+		// 3 args always means a CfgName was passed. It couldn't mean anything else at this time.
 		Options.CfgName = args[0]
 		Options.Key = args[1]
 		Options.Value = []byte(args[2])

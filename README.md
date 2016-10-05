@@ -10,7 +10,7 @@ a command line. You can also work with configurations via RESTful API.
 
 ### Command Line Interface
 
-Assuming you built the binary to ```discfg``` and you have your AWS credentials under ```~/.aws``` 
+Assuming you built and/or installed the ```discfg``` binary and you have your AWS credentials under ```~/.aws``` 
 because you've used the AWS CLI tool before and configured them...
 
 ```
