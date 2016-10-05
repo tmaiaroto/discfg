@@ -7,18 +7,19 @@ import (
 
 func TestSetOptsFromArgs(t *testing.T) {
 	Convey("When 1 argument is passed", t, func() {
-		Convey("A Key option should be set, a Value should not", func() {
-			setOptsFromArgs([]string{"some key"})
-			So(Options.Key, ShouldEqual, "some key")
+		Convey("A CfgName option should be set, a Key and Value should not", func() {
+			setOptsFromArgs([]string{"testCfg"})
+			So(Options.CfgName, ShouldEqual, "testCfg")
+			So(string(Options.Key), ShouldEqual, "")
 			So(string(Options.Value), ShouldEqual, "")
 		})
 	})
 
 	Convey("When 2 arguments are passed", t, func() {
-		Convey("A Key and Value option should be set", func() {
-			setOptsFromArgs([]string{"some key", "some value"})
-			So(Options.Key, ShouldEqual, "some key")
-			So(string(Options.Value), ShouldEqual, "some value")
+		Convey("A CfgName and Key option should be set", func() {
+			setOptsFromArgs([]string{"testCfg", "some key"})
+			So(Options.CfgName, ShouldEqual, "testCfg")
+			So(string(Options.Value), ShouldEqual, "some key")
 		})
 	})
 
