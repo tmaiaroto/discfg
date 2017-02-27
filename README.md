@@ -69,7 +69,15 @@ of item values.
 
 The serverless API was built using the [Apex](http://apex.run/) framework along with [Terraform](https://www.terraform.io/).
 This leverages AWS Lambda and API Gateway. Assuming you have AWS CLI setup and then setup Apex 
-and Terraform, you could then easily deploy discfg (from the `apex` directory) with the following:
+and Terraform, you could then easily deploy discfg (from the `apex` directory) with the following.
+
+You'll first need the Apex go shim if you don't already have it:
+
+```
+github.com/apex/go-apex
+```
+
+Then you can setup the infrastructure and deploy with:
 
 ```
 apex infra get
