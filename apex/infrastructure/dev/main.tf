@@ -1,5 +1,3 @@
-variable "aws_region" {}
-
 module "iam" {
   source = "../modules/iam"
 }
