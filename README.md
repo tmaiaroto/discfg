@@ -72,6 +72,7 @@ This leverages AWS Lambda and API Gateway. Assuming you have AWS CLI setup and t
 and Terraform, you could then easily deploy discfg (from the `apex` directory) with the following:
 
 ```
+apex infra get
 apex infra apply -var 'aws_account_id=XXXXX'
 apex deploy
 ```
