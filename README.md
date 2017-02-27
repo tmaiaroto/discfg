@@ -74,7 +74,7 @@ and Terraform, you could then easily deploy discfg (from the `apex` directory) w
 You'll first need the Apex go shim if you don't already have it:
 
 ```
-github.com/apex/go-apex
+go get github.com/apex/go-apex
 ```
 
 Then you can setup the infrastructure and deploy with:
